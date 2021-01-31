@@ -308,11 +308,11 @@ impl<T: Trait> Module<T> {
     /// A helper function to fetch the price and send signed transaction.
     fn fetch_price_and_send_signed() -> Result<(), &'static str> {
         let signer = Signer::<T, T::AuthorityId>::all_accounts();
-        // if !signer.can_sign() {
-        //     return Err(
-        //         "No local accounts available. Consider adding one via `author_insertKey` RPC."
-        //     )?;
-        // }
+        if !signer.can_sign() {
+            return Err(
+                "No local accounts available. Consider adding one via `author_insertKey` RPC."
+            )?;
+        }
         // Make an external HTTP request to fetch the current price.
         // Note this call will block until response is received.
         let price = Self::fetch_price().map_err(|_| "Failed to fetch price")?;
