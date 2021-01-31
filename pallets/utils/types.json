@@ -1,5 +1,5 @@
 {
-  "SpaceId": "u64",
+  "StorefrontId": "u64",
 
   "WhoAndWhen": {
     "account": "AccountId",
@@ -10,7 +10,7 @@
   "User": {
     "_enum": {
       "Account": "AccountId",
-      "Space": "SpaceId"
+      "Storefront": "StorefrontId"
     }
   },
 

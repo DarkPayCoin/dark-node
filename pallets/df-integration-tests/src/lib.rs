@@ -20,20 +20,20 @@ mod tests {
     use frame_system::{self as system};
 
     use pallet_permissions::{
-        SpacePermission,
-        SpacePermission as SP,
-        SpacePermissionSet,
-        SpacePermissions,
+        StorefrontPermission,
+        StorefrontPermission as SP,
+        StorefrontPermissionSet,
+        StorefrontPermissions,
     };
-    use pallet_posts::{PostId, Post, PostUpdate, PostExtension, Comment, Error as PostsError};
+    use pallet_products::{ProductId, Product, ProductUpdate, ProductExtension, Comment, Error as ProductsError};
     use pallet_profiles::{ProfileUpdate, Error as ProfilesError};
     use pallet_profile_follows::Error as ProfileFollowsError;
-    use pallet_reactions::{ReactionId, ReactionKind, PostReactionScores, Error as ReactionsError};
+    use pallet_reactions::{ReactionId, ReactionKind, ProductReactionScores, Error as ReactionsError};
     use pallet_scores::ScoringAction;
-    use pallet_spaces::{SpaceById, SpaceUpdate, Error as SpacesError};
-    use pallet_space_follows::Error as SpaceFollowsError;
-    use pallet_space_ownership::Error as SpaceOwnershipError;
-    use pallet_utils::{SpaceId, Error as UtilsError, User, Content};
+    use pallet_storefronts::{StorefrontById, StorefrontUpdate, Error as StorefrontsError};
+    use pallet_storefront_follows::Error as StorefrontFollowsError;
+    use pallet_storefront_ownership::Error as StorefrontOwnershipError;
+    use pallet_utils::{StorefrontId, Error as UtilsError, User, Content};
 
     impl_outer_origin! {
         pub enum Origin for TestRuntime {}
@@ -111,19 +111,19 @@ mod tests {
     }
 
     parameter_types! {
-      pub DefaultSpacePermissions: SpacePermissions = SpacePermissions {
+      pub DefaultStorefrontPermissions: StorefrontPermissions = StorefrontPermissions {
 
         // No permissions disabled by default
         none: None,
 
-        everyone: Some(SpacePermissionSet::from_iter(vec![
-            SP::UpdateOwnSubspaces,
-            SP::DeleteOwnSubspaces,
-            SP::HideOwnSubspaces,
+        everyone: Some(StorefrontPermissionSet::from_iter(vec![
+            SP::UpdateOwnSubstorefronts,
+            SP::DeleteOwnSubstorefronts,
+            SP::HideOwnSubstorefronts,
 
-            SP::UpdateOwnPosts,
-            SP::DeleteOwnPosts,
-            SP::HideOwnPosts,
+            SP::UpdateOwnProducts,
+            SP::DeleteOwnProducts,
+            SP::HideOwnProducts,
 
             SP::CreateComments,
             SP::UpdateOwnComments,
@@ -138,53 +138,53 @@ mod tests {
         // Followers can do everything that everyone else can.
         follower: None,
 
-        space_owner: Some(SpacePermissionSet::from_iter(vec![
+        storefront_owner: Some(StorefrontPermissionSet::from_iter(vec![
             SP::ManageRoles,
-            SP::RepresentSpaceInternally,
-            SP::RepresentSpaceExternally,
-            SP::OverrideSubspacePermissions,
-            SP::OverridePostPermissions,
+            SP::RepresentStorefrontInternally,
+            SP::RepresentStorefrontExternally,
+            SP::OverrideSubstorefrontPermissions,
+            SP::OverrideProductPermissions,
 
-            SP::CreateSubspaces,
-            SP::CreatePosts,
+            SP::CreateSubstorefronts,
+            SP::CreateProducts,
 
-            SP::UpdateSpace,
-            SP::UpdateAnySubspace,
-            SP::UpdateAnyPost,
+            SP::UpdateStorefront,
+            SP::UpdateAnySubstorefront,
+            SP::UpdateAnyProduct,
 
-            SP::DeleteAnySubspace,
-            SP::DeleteAnyPost,
+            SP::DeleteAnySubstorefront,
+            SP::DeleteAnyProduct,
 
-            SP::HideAnySubspace,
-            SP::HideAnyPost,
+            SP::HideAnySubstorefront,
+            SP::HideAnyProduct,
             SP::HideAnyComment,
 
             SP::SuggestEntityStatus,
             SP::UpdateEntityStatus,
 
-            SP::UpdateSpaceSettings,
+            SP::UpdateStorefrontSettings,
         ].into_iter())),
       };
     }
 
     impl pallet_permissions::Trait for TestRuntime {
-        type DefaultSpacePermissions = DefaultSpacePermissions;
+        type DefaultStorefrontPermissions = DefaultStorefrontPermissions;
     }
 
     parameter_types! {
         pub const MaxCommentDepth: u32 = 10;
     }
 
-    impl pallet_posts::Trait for TestRuntime {
+    impl pallet_products::Trait for TestRuntime {
         type Event = ();
         type MaxCommentDepth = MaxCommentDepth;
-        type PostScores = Scores;
-        type AfterPostUpdated = PostHistory;
+        type ProductScores = Scores;
+        type AfterProductUpdated = ProductHistory;
     }
 
     parameter_types! {}
 
-    impl pallet_post_history::Trait for TestRuntime {}
+    impl pallet_product_history::Trait for TestRuntime {}
 
     parameter_types! {}
 
@@ -209,7 +209,7 @@ mod tests {
 
     impl pallet_reactions::Trait for TestRuntime {
         type Event = ();
-        type PostReactionScores = Scores;
+        type ProductReactionScores = Scores;
     }
 
     parameter_types! {
@@ -219,17 +219,17 @@ mod tests {
     impl pallet_roles::Trait for TestRuntime {
         type Event = ();
         type MaxUsersToProcessPerDeleteRole = MaxUsersToProcessPerDeleteRole;
-        type Spaces = Spaces;
-        type SpaceFollows = SpaceFollows;
+        type Storefronts = Storefronts;
+        type StorefrontFollows = StorefrontFollows;
     }
 
     parameter_types! {
-        pub const FollowSpaceActionWeight: i16 = 7;
+        pub const FollowStorefrontActionWeight: i16 = 7;
         pub const FollowAccountActionWeight: i16 = 3;
 
-        pub const SharePostActionWeight: i16 = 7;
-        pub const UpvotePostActionWeight: i16 = 5;
-        pub const DownvotePostActionWeight: i16 = -3;
+        pub const ShareProductActionWeight: i16 = 7;
+        pub const UpvoteProductActionWeight: i16 = 5;
+        pub const DownvoteProductActionWeight: i16 = -3;
 
         pub const CreateCommentActionWeight: i16 = 5;
         pub const ShareCommentActionWeight: i16 = 5;
@@ -240,12 +240,12 @@ mod tests {
     impl pallet_scores::Trait for TestRuntime {
         type Event = ();
 
-        type FollowSpaceActionWeight = FollowSpaceActionWeight;
+        type FollowStorefrontActionWeight = FollowStorefrontActionWeight;
         type FollowAccountActionWeight = FollowAccountActionWeight;
 
-        type SharePostActionWeight = SharePostActionWeight;
-        type UpvotePostActionWeight = UpvotePostActionWeight;
-        type DownvotePostActionWeight = DownvotePostActionWeight;
+        type ShareProductActionWeight = ShareProductActionWeight;
+        type UpvoteProductActionWeight = UpvoteProductActionWeight;
+        type DownvoteProductActionWeight = DownvoteProductActionWeight;
 
         type CreateCommentActionWeight = CreateCommentActionWeight;
         type ShareCommentActionWeight = ShareCommentActionWeight;
@@ -255,48 +255,48 @@ mod tests {
 
     parameter_types! {}
 
-    impl pallet_space_follows::Trait for TestRuntime {
+    impl pallet_storefront_follows::Trait for TestRuntime {
         type Event = ();
-        type BeforeSpaceFollowed = Scores;
-        type BeforeSpaceUnfollowed = Scores;
+        type BeforeStorefrontFollowed = Scores;
+        type BeforeStorefrontUnfollowed = Scores;
     }
 
     parameter_types! {}
 
-    impl pallet_space_ownership::Trait for TestRuntime {
+    impl pallet_storefront_ownership::Trait for TestRuntime {
         type Event = ();
     }
 
     parameter_types! {}
 
-    impl pallet_spaces::Trait for TestRuntime {
+    impl pallet_storefronts::Trait for TestRuntime {
         type Event = ();
         type Roles = Roles;
-        type SpaceFollows = SpaceFollows;
-        type BeforeSpaceCreated = SpaceFollows;
-        type AfterSpaceUpdated = SpaceHistory;
-        type SpaceCreationFee = ();
+        type StorefrontFollows = StorefrontFollows;
+        type BeforeStorefrontCreated = StorefrontFollows;
+        type AfterStorefrontUpdated = StorefrontHistory;
+        type StorefrontCreationFee = ();
     }
 
     parameter_types! {}
 
-    impl pallet_space_history::Trait for TestRuntime {}
+    impl pallet_storefront_history::Trait for TestRuntime {}
 
     type System = system::Module<TestRuntime>;
     type Balances = pallet_balances::Module<TestRuntime>;
 
-    type Posts = pallet_posts::Module<TestRuntime>;
-    type PostHistory = pallet_post_history::Module<TestRuntime>;
+    type Products = pallet_products::Module<TestRuntime>;
+    type ProductHistory = pallet_product_history::Module<TestRuntime>;
     type ProfileFollows = pallet_profile_follows::Module<TestRuntime>;
     type Profiles = pallet_profiles::Module<TestRuntime>;
     type ProfileHistory = pallet_profile_history::Module<TestRuntime>;
     type Reactions = pallet_reactions::Module<TestRuntime>;
     type Roles = pallet_roles::Module<TestRuntime>;
     type Scores = pallet_scores::Module<TestRuntime>;
-    type SpaceFollows = pallet_space_follows::Module<TestRuntime>;
-    type SpaceHistory = pallet_space_history::Module<TestRuntime>;
-    type SpaceOwnership = pallet_space_ownership::Module<TestRuntime>;
-    type Spaces = pallet_spaces::Module<TestRuntime>;
+    type StorefrontFollows = pallet_storefront_follows::Module<TestRuntime>;
+    type StorefrontHistory = pallet_storefront_history::Module<TestRuntime>;
+    type StorefrontOwnership = pallet_storefront_ownership::Module<TestRuntime>;
+    type Storefronts = pallet_storefronts::Module<TestRuntime>;
 
     pub type AccountId = u64;
     type BlockNumber = u64;
@@ -304,7 +304,7 @@ mod tests {
 
     pub struct ExtBuilder;
 
-    // TODO: make created space/post/comment configurable or by default
+    // TODO: make created storefront/product/comment configurable or by default
     impl ExtBuilder {
         /// Default ext configuration with BlockNumber 1
         pub fn build() -> TestExternalities {
@@ -318,8 +318,8 @@ mod tests {
             ext
         }
 
-        /// Custom ext configuration with SpaceId 1 and BlockNumber 1
-        pub fn build_with_space() -> TestExternalities {
+        /// Custom ext configuration with StorefrontId 1 and BlockNumber 1
+        pub fn build_with_storefront() -> TestExternalities {
             let storage = system::GenesisConfig::default()
                 .build_storage::<TestRuntime>()
                 .unwrap();
@@ -327,14 +327,14 @@ mod tests {
             let mut ext = TestExternalities::from(storage);
             ext.execute_with(|| {
                 System::set_block_number(1);
-                assert_ok!(_create_default_space());
+                assert_ok!(_create_default_storefront());
             });
 
             ext
         }
 
-        /// Custom ext configuration with SpaceId 1, PostId 1 and BlockNumber 1
-        pub fn build_with_post() -> TestExternalities {
+        /// Custom ext configuration with StorefrontId 1, ProductId 1 and BlockNumber 1
+        pub fn build_with_product() -> TestExternalities {
             let storage = system::GenesisConfig::default()
                 .build_storage::<TestRuntime>()
                 .unwrap();
@@ -342,14 +342,14 @@ mod tests {
             let mut ext = TestExternalities::from(storage);
             ext.execute_with(|| {
                 System::set_block_number(1);
-                assert_ok!(_create_default_space());
-                assert_ok!(_create_default_post());
+                assert_ok!(_create_default_storefront());
+                assert_ok!(_create_default_product());
             });
 
             ext
         }
 
-        /// Custom ext configuration with SpaceId 1, PostId 1, PostId 2 (as comment) and BlockNumber 1
+        /// Custom ext configuration with StorefrontId 1, ProductId 1, ProductId 2 (as comment) and BlockNumber 1
         pub fn build_with_comment() -> TestExternalities {
             let storage = system::GenesisConfig::default()
                 .build_storage::<TestRuntime>()
@@ -358,16 +358,16 @@ mod tests {
             let mut ext = TestExternalities::from(storage);
             ext.execute_with(|| {
                 System::set_block_number(1);
-                assert_ok!(_create_default_space());
-                assert_ok!(_create_default_post());
+                assert_ok!(_create_default_storefront());
+                assert_ok!(_create_default_product());
                 assert_ok!(_create_default_comment());
             });
 
             ext
         }
 
-        /// Custom ext configuration with pending ownership transfer without Space
-        pub fn build_with_pending_ownership_transfer_no_space() -> TestExternalities {
+        /// Custom ext configuration with pending ownership transfer without Storefront
+        pub fn build_with_pending_ownership_transfer_no_storefront() -> TestExternalities {
             let storage = system::GenesisConfig::default()
                 .build_storage::<TestRuntime>()
                 .unwrap();
@@ -376,16 +376,16 @@ mod tests {
             ext.execute_with(|| {
                 System::set_block_number(1);
 
-                assert_ok!(_create_default_space());
-                assert_ok!(_transfer_default_space_ownership());
+                assert_ok!(_create_default_storefront());
+                assert_ok!(_transfer_default_storefront_ownership());
 
-                <SpaceById<TestRuntime>>::remove(SPACE1);
+                <StorefrontById<TestRuntime>>::remove(SPACE1);
             });
 
             ext
         }
 
-        /// Custom ext configuration with specified permissions granted (includes SpaceId 1)
+        /// Custom ext configuration with specified permissions granted (includes StorefrontId 1)
         pub fn build_with_a_few_roles_granted_to_account2(perms: Vec<SP>) -> TestExternalities {
             let storage = system::GenesisConfig::default()
                 .build_storage::<TestRuntime>()
@@ -396,7 +396,7 @@ mod tests {
                 System::set_block_number(1);
                 let user = User::Account(ACCOUNT2);
 
-                assert_ok!(_create_default_space());
+                assert_ok!(_create_default_storefront());
 
                 assert_ok!(_create_role(
                     None,
@@ -415,8 +415,8 @@ mod tests {
             ext
         }
 
-        /// Custom ext configuration with space follow without Space
-        pub fn build_with_space_follow_no_space() -> TestExternalities {
+        /// Custom ext configuration with storefront follow without Storefront
+        pub fn build_with_storefront_follow_no_storefront() -> TestExternalities {
             let storage = system::GenesisConfig::default()
                 .build_storage::<TestRuntime>()
                 .unwrap();
@@ -425,10 +425,10 @@ mod tests {
             ext.execute_with(|| {
                 System::set_block_number(1);
 
-                assert_ok!(_create_default_space());
-                assert_ok!(_default_follow_space());
+                assert_ok!(_create_default_storefront());
+                assert_ok!(_default_follow_storefront());
 
-                <SpaceById<TestRuntime>>::remove(SPACE1);
+                <StorefrontById<TestRuntime>>::remove(SPACE1);
             });
 
             ext
@@ -442,34 +442,34 @@ mod tests {
     const ACCOUNT2: AccountId = 2;
     const ACCOUNT3: AccountId = 3;
 
-    const SPACE1: SpaceId = 1001;
-    const SPACE2: SpaceId = 1002;
-    const _SPACE3: SpaceId = 1003;
+    const SPACE1: StorefrontId = 1001;
+    const SPACE2: StorefrontId = 1002;
+    const _SPACE3: StorefrontId = 1003;
 
-    const POST1: PostId = 1;
-    const POST2: PostId = 2;
-    const POST3: PostId = 3;
+    const POST1: ProductId = 1;
+    const POST2: ProductId = 2;
+    const POST3: ProductId = 3;
 
     const REACTION1: ReactionId = 1;
     const REACTION2: ReactionId = 2;
     const _REACTION3: ReactionId = 3;
 
-    fn space_handle() -> Vec<u8> {
-        b"space_handle".to_vec()
+    fn storefront_handle() -> Vec<u8> {
+        b"storefront_handle".to_vec()
     }
 
-    fn space_content_ipfs() -> Content {
+    fn storefront_content_ipfs() -> Content {
         Content::IPFS(b"QmRAQB6YaCyidP37UdDnjFY5vQuiBrcqdyoW1CuDgwxkD4".to_vec())
     }
 
-    fn space_update(
-        parent_id: Option<Option<SpaceId>>,
+    fn storefront_update(
+        parent_id: Option<Option<StorefrontId>>,
         handle: Option<Option<Vec<u8>>>,
         content: Option<Content>,
         hidden: Option<bool>,
-        permissions: Option<Option<SpacePermissions>>
-    ) -> SpaceUpdate {
-        SpaceUpdate {
+        permissions: Option<Option<StorefrontPermissions>>
+    ) -> StorefrontUpdate {
+        StorefrontUpdate {
             parent_id,
             handle,
             content,
@@ -478,17 +478,17 @@ mod tests {
         }
     }
 
-    fn post_content_ipfs() -> Content {
+    fn product_content_ipfs() -> Content {
         Content::IPFS(b"QmRAQB6YaCyidP37UdDnjFY5vQuiBrcqdyoW2CuDgwxkD4".to_vec())
     }
 
-    fn post_update(
-        space_id: Option<SpaceId>,
+    fn product_update(
+        storefront_id: Option<StorefrontId>,
         content: Option<Content>,
         hidden: Option<bool>
-    ) -> PostUpdate {
-        PostUpdate {
-            space_id,
+    ) -> ProductUpdate {
+        ProductUpdate {
+            storefront_id,
             content,
             hidden,
         }
@@ -514,16 +514,16 @@ mod tests {
         ReactionKind::Downvote
     }
 
-    fn scoring_action_upvote_post() -> ScoringAction {
-        ScoringAction::UpvotePost
+    fn scoring_action_upvote_product() -> ScoringAction {
+        ScoringAction::UpvoteProduct
     }
 
-    fn scoring_action_downvote_post() -> ScoringAction {
-        ScoringAction::DownvotePost
+    fn scoring_action_downvote_product() -> ScoringAction {
+        ScoringAction::DownvoteProduct
     }
 
-    fn scoring_action_share_post() -> ScoringAction {
-        ScoringAction::SharePost
+    fn scoring_action_share_product() -> ScoringAction {
+        ScoringAction::ShareProduct
     }
 
     fn scoring_action_create_comment() -> ScoringAction {
@@ -542,105 +542,105 @@ mod tests {
         ScoringAction::ShareComment
     }
 
-    fn scoring_action_follow_space() -> ScoringAction {
-        ScoringAction::FollowSpace
+    fn scoring_action_follow_storefront() -> ScoringAction {
+        ScoringAction::FollowStorefront
     }
 
     fn scoring_action_follow_account() -> ScoringAction {
         ScoringAction::FollowAccount
     }
 
-    fn extension_regular_post() -> PostExtension {
-        PostExtension::RegularPost
+    fn extension_regular_product() -> ProductExtension {
+        ProductExtension::RegularProduct
     }
 
-    fn extension_comment(parent_id: Option<PostId>, root_post_id: PostId) -> PostExtension {
-        PostExtension::Comment(Comment { parent_id, root_post_id })
+    fn extension_comment(parent_id: Option<ProductId>, root_product_id: ProductId) -> ProductExtension {
+        ProductExtension::Comment(Comment { parent_id, root_product_id })
     }
 
-    fn extension_shared_post(post_id: PostId) -> PostExtension {
-        PostExtension::SharedPost(post_id)
+    fn extension_shared_product(product_id: ProductId) -> ProductExtension {
+        ProductExtension::SharedProduct(product_id)
     }
 
-    fn _create_default_space() -> DispatchResult {
-        _create_space(None, None, None, None)
+    fn _create_default_storefront() -> DispatchResult {
+        _create_storefront(None, None, None, None)
     }
 
-    fn _create_space(
+    fn _create_storefront(
         origin: Option<Origin>,
-        parent_id_opt: Option<Option<SpaceId>>,
+        parent_id_opt: Option<Option<StorefrontId>>,
         handle: Option<Option<Vec<u8>>>,
         content: Option<Content>
     ) -> DispatchResult {
-        Spaces::create_space(
+        Storefronts::create_storefront(
             origin.unwrap_or_else(|| Origin::signed(ACCOUNT1)),
             parent_id_opt.unwrap_or(None),
-            handle.unwrap_or_else(|| Some(self::space_handle())),
-            content.unwrap_or_else(self::space_content_ipfs),
+            handle.unwrap_or_else(|| Some(self::storefront_handle())),
+            content.unwrap_or_else(self::storefront_content_ipfs),
         )
     }
 
-    fn _update_space(
+    fn _update_storefront(
         origin: Option<Origin>,
-        space_id: Option<SpaceId>,
-        update: Option<SpaceUpdate>
+        storefront_id: Option<StorefrontId>,
+        update: Option<StorefrontUpdate>
     ) -> DispatchResult {
-        Spaces::update_space(
+        Storefronts::update_storefront(
             origin.unwrap_or_else(|| Origin::signed(ACCOUNT1)),
-            space_id.unwrap_or(SPACE1),
-            update.unwrap_or_else(|| self::space_update(None, None, None, None, None)),
+            storefront_id.unwrap_or(SPACE1),
+            update.unwrap_or_else(|| self::storefront_update(None, None, None, None, None)),
         )
     }
 
-    fn _default_follow_space() -> DispatchResult {
-        _follow_space(None, None)
+    fn _default_follow_storefront() -> DispatchResult {
+        _follow_storefront(None, None)
     }
 
-    fn _follow_space(origin: Option<Origin>, space_id: Option<SpaceId>) -> DispatchResult {
-        SpaceFollows::follow_space(
+    fn _follow_storefront(origin: Option<Origin>, storefront_id: Option<StorefrontId>) -> DispatchResult {
+        StorefrontFollows::follow_storefront(
             origin.unwrap_or_else(|| Origin::signed(ACCOUNT2)),
-            space_id.unwrap_or(SPACE1),
+            storefront_id.unwrap_or(SPACE1),
         )
     }
 
-    fn _default_unfollow_space() -> DispatchResult {
-        _unfollow_space(None, None)
+    fn _default_unfollow_storefront() -> DispatchResult {
+        _unfollow_storefront(None, None)
     }
 
-    fn _unfollow_space(origin: Option<Origin>, space_id: Option<SpaceId>) -> DispatchResult {
-        SpaceFollows::unfollow_space(
+    fn _unfollow_storefront(origin: Option<Origin>, storefront_id: Option<StorefrontId>) -> DispatchResult {
+        StorefrontFollows::unfollow_storefront(
             origin.unwrap_or_else(|| Origin::signed(ACCOUNT2)),
-            space_id.unwrap_or(SPACE1),
+            storefront_id.unwrap_or(SPACE1),
         )
     }
 
-    fn _create_default_post() -> DispatchResult {
-        _create_post(None, None, None, None)
+    fn _create_default_product() -> DispatchResult {
+        _create_product(None, None, None, None)
     }
 
-    fn _create_post(
+    fn _create_product(
         origin: Option<Origin>,
-        space_id_opt: Option<Option<SpaceId>>,
-        extension: Option<PostExtension>,
+        storefront_id_opt: Option<Option<StorefrontId>>,
+        extension: Option<ProductExtension>,
         content: Option<Content>
     ) -> DispatchResult {
-        Posts::create_post(
+        Products::create_product(
             origin.unwrap_or_else(|| Origin::signed(ACCOUNT1)),
-            space_id_opt.unwrap_or(Some(SPACE1)),
-            extension.unwrap_or_else(self::extension_regular_post),
-            content.unwrap_or_else(self::post_content_ipfs),
+            storefront_id_opt.unwrap_or(Some(SPACE1)),
+            extension.unwrap_or_else(self::extension_regular_product),
+            content.unwrap_or_else(self::product_content_ipfs),
         )
     }
 
-    fn _update_post(
+    fn _update_product(
         origin: Option<Origin>,
-        post_id: Option<PostId>,
-        update: Option<PostUpdate>,
+        product_id: Option<ProductId>,
+        update: Option<ProductUpdate>,
     ) -> DispatchResult {
-        Posts::update_post(
+        Products::update_product(
             origin.unwrap_or_else(|| Origin::signed(ACCOUNT1)),
-            post_id.unwrap_or(POST1),
-            update.unwrap_or_else(|| self::post_update(None, None, None)),
+            product_id.unwrap_or(POST1),
+            update.unwrap_or_else(|| self::product_update(None, None, None)),
         )
     }
 
@@ -650,16 +650,16 @@ mod tests {
 
     fn _create_comment(
         origin: Option<Origin>,
-        post_id: Option<PostId>,
-        parent_id: Option<Option<PostId>>,
+        product_id: Option<ProductId>,
+        parent_id: Option<Option<ProductId>>,
         content: Option<Content>,
     ) -> DispatchResult {
-        _create_post(
+        _create_product(
             origin,
             Some(None),
             Some(self::extension_comment(
                 parent_id.unwrap_or(None),
-                post_id.unwrap_or(POST1)
+                product_id.unwrap_or(POST1)
             )),
             Some(content.unwrap_or_else(self::comment_content_ipfs)),
         )
@@ -667,55 +667,55 @@ mod tests {
 
     fn _update_comment(
         origin: Option<Origin>,
-        post_id: Option<PostId>,
-        update: Option<PostUpdate>
+        product_id: Option<ProductId>,
+        update: Option<ProductUpdate>
     ) -> DispatchResult {
-        _update_post(
+        _update_product(
             origin,
-            Some(post_id.unwrap_or(POST2)),
+            Some(product_id.unwrap_or(POST2)),
             Some(update.unwrap_or_else(||
-                self::post_update(None, Some(self::reply_content_ipfs()), None))
+                self::product_update(None, Some(self::reply_content_ipfs()), None))
             ),
         )
     }
 
-    fn _create_default_post_reaction() -> DispatchResult {
-        _create_post_reaction(None, None, None)
+    fn _create_default_product_reaction() -> DispatchResult {
+        _create_product_reaction(None, None, None)
     }
 
     fn _create_default_comment_reaction() -> DispatchResult {
         _create_comment_reaction(None, None, None)
     }
 
-    fn _create_post_reaction(
+    fn _create_product_reaction(
         origin: Option<Origin>,
-        post_id: Option<PostId>,
+        product_id: Option<ProductId>,
         kind: Option<ReactionKind>
     ) -> DispatchResult {
-        Reactions::create_post_reaction(
+        Reactions::create_product_reaction(
             origin.unwrap_or_else(|| Origin::signed(ACCOUNT1)),
-            post_id.unwrap_or(POST1),
+            product_id.unwrap_or(POST1),
             kind.unwrap_or_else(self::reaction_upvote),
         )
     }
 
     fn _create_comment_reaction(
         origin: Option<Origin>,
-        post_id: Option<PostId>,
+        product_id: Option<ProductId>,
         kind: Option<ReactionKind>
     ) -> DispatchResult {
-        _create_post_reaction(origin, Some(post_id.unwrap_or(2)), kind)
+        _create_product_reaction(origin, Some(product_id.unwrap_or(2)), kind)
     }
 
-    fn _update_post_reaction(
+    fn _update_product_reaction(
         origin: Option<Origin>,
-        post_id: Option<PostId>,
+        product_id: Option<ProductId>,
         reaction_id: ReactionId,
         kind: Option<ReactionKind>
     ) -> DispatchResult {
-        Reactions::update_post_reaction(
+        Reactions::update_product_reaction(
             origin.unwrap_or_else(|| Origin::signed(ACCOUNT1)),
-            post_id.unwrap_or(POST1),
+            product_id.unwrap_or(POST1),
             reaction_id,
             kind.unwrap_or_else(self::reaction_upvote),
         )
@@ -723,31 +723,31 @@ mod tests {
 
     fn _update_comment_reaction(
         origin: Option<Origin>,
-        post_id: Option<PostId>,
+        product_id: Option<ProductId>,
         reaction_id: ReactionId,
         kind: Option<ReactionKind>
     ) -> DispatchResult {
-        _update_post_reaction(origin, Some(post_id.unwrap_or(2)), reaction_id, kind)
+        _update_product_reaction(origin, Some(product_id.unwrap_or(2)), reaction_id, kind)
     }
 
-    fn _delete_post_reaction(
+    fn _delete_product_reaction(
         origin: Option<Origin>,
-        post_id: Option<PostId>,
+        product_id: Option<ProductId>,
         reaction_id: ReactionId
     ) -> DispatchResult {
-        Reactions::delete_post_reaction(
+        Reactions::delete_product_reaction(
             origin.unwrap_or_else(|| Origin::signed(ACCOUNT1)),
-            post_id.unwrap_or(POST1),
+            product_id.unwrap_or(POST1),
             reaction_id,
         )
     }
 
     fn _delete_comment_reaction(
         origin: Option<Origin>,
-        post_id: Option<PostId>,
+        product_id: Option<ProductId>,
         reaction_id: ReactionId
     ) -> DispatchResult {
-        _delete_post_reaction(origin, Some(post_id.unwrap_or(2)), reaction_id)
+        _delete_product_reaction(origin, Some(product_id.unwrap_or(2)), reaction_id)
     }
 
     fn _create_default_profile() -> DispatchResult {
@@ -798,38 +798,38 @@ mod tests {
         )
     }
 
-    fn _score_post_on_reaction_with_id(
+    fn _score_product_on_reaction_with_id(
         account: AccountId,
-        post_id: PostId,
+        product_id: ProductId,
         kind: ReactionKind
     ) -> DispatchResult {
-        if let Some(ref mut post) = Posts::post_by_id(post_id) {
-            Scores::score_post_on_reaction(account, post, kind)
+        if let Some(ref mut product) = Products::product_by_id(product_id) {
+            Scores::score_product_on_reaction(account, product, kind)
         } else {
-            panic!("Test error. Post\\Comment with specified ID not found.");
+            panic!("Test error. Product\\Comment with specified ID not found.");
         }
     }
 
-    fn _score_post_on_reaction(
+    fn _score_product_on_reaction(
         account: AccountId,
-        post: &mut Post<TestRuntime>,
+        product: &mut Product<TestRuntime>,
         kind: ReactionKind
     ) -> DispatchResult {
-        Scores::score_post_on_reaction(account, post, kind)
+        Scores::score_product_on_reaction(account, product, kind)
     }
 
-    fn _transfer_default_space_ownership() -> DispatchResult {
-        _transfer_space_ownership(None, None, None)
+    fn _transfer_default_storefront_ownership() -> DispatchResult {
+        _transfer_storefront_ownership(None, None, None)
     }
 
-    fn _transfer_space_ownership(
+    fn _transfer_storefront_ownership(
         origin: Option<Origin>,
-        space_id: Option<SpaceId>,
+        storefront_id: Option<StorefrontId>,
         transfer_to: Option<AccountId>
     ) -> DispatchResult {
-        SpaceOwnership::transfer_space_ownership(
+        StorefrontOwnership::transfer_storefront_ownership(
             origin.unwrap_or_else(|| Origin::signed(ACCOUNT1)),
-            space_id.unwrap_or(SPACE1),
+            storefront_id.unwrap_or(SPACE1),
             transfer_to.unwrap_or(ACCOUNT2),
         )
     }
@@ -838,10 +838,10 @@ mod tests {
         _accept_pending_ownership(None, None)
     }
 
-    fn _accept_pending_ownership(origin: Option<Origin>, space_id: Option<SpaceId>) -> DispatchResult {
-        SpaceOwnership::accept_pending_ownership(
+    fn _accept_pending_ownership(origin: Option<Origin>, storefront_id: Option<StorefrontId>) -> DispatchResult {
+        StorefrontOwnership::accept_pending_ownership(
             origin.unwrap_or_else(|| Origin::signed(ACCOUNT2)),
-            space_id.unwrap_or(SPACE1),
+            storefront_id.unwrap_or(SPACE1),
         )
     }
 
@@ -853,10 +853,10 @@ mod tests {
         _reject_pending_ownership(Some(Origin::signed(ACCOUNT1)), None)
     }
 
-    fn _reject_pending_ownership(origin: Option<Origin>, space_id: Option<SpaceId>) -> DispatchResult {
-        SpaceOwnership::reject_pending_ownership(
+    fn _reject_pending_ownership(origin: Option<Origin>, storefront_id: Option<StorefrontId>) -> DispatchResult {
+        StorefrontOwnership::reject_pending_ownership(
             origin.unwrap_or_else(|| Origin::signed(ACCOUNT2)),
-            space_id.unwrap_or(SPACE1),
+            storefront_id.unwrap_or(SPACE1),
         )
     }
     /* ---------------------------------------------------------------------------------------------- */
@@ -874,7 +874,7 @@ mod tests {
     }
 
     /// Permissions Set that includes next permission: ManageRoles
-    fn permission_set_default() -> Vec<SpacePermission> {
+    fn permission_set_default() -> Vec<StorefrontPermission> {
         vec![SP::ManageRoles]
     }
 
@@ -885,14 +885,14 @@ mod tests {
 
     pub fn _create_role(
         origin: Option<Origin>,
-        space_id: Option<SpaceId>,
+        storefront_id: Option<StorefrontId>,
         time_to_live: Option<Option<BlockNumber>>,
         content: Option<Content>,
-        permissions: Option<Vec<SpacePermission>>,
+        permissions: Option<Vec<StorefrontPermission>>,
     ) -> DispatchResult {
         Roles::create_role(
             origin.unwrap_or_else(|| Origin::signed(ACCOUNT1)),
-            space_id.unwrap_or(SPACE1),
+            storefront_id.unwrap_or(SPACE1),
             time_to_live.unwrap_or_default(), // Should return 'None'
             content.unwrap_or_else(self::default_role_content_ipfs),
             permissions.unwrap_or_else(self::permission_set_default),
@@ -931,56 +931,56 @@ mod tests {
     /* ---------------------------------------------------------------------------------------------- */
 
 
-    // Space tests
+    // Storefront tests
     #[test]
-    fn create_space_should_work() {
+    fn create_storefront_should_work() {
         ExtBuilder::build().execute_with(|| {
-            assert_ok!(_create_default_space()); // SpaceId 1
+            assert_ok!(_create_default_storefront()); // StorefrontId 1
 
             // Check storages
-            assert_eq!(Spaces::space_ids_by_owner(ACCOUNT1), vec![SPACE1]);
-            assert_eq!(Spaces::space_id_by_handle(self::space_handle()), Some(SPACE1));
-            assert_eq!(Spaces::next_space_id(), SPACE2);
+            assert_eq!(Storefronts::storefront_ids_by_owner(ACCOUNT1), vec![SPACE1]);
+            assert_eq!(Storefronts::storefront_id_by_handle(self::storefront_handle()), Some(SPACE1));
+            assert_eq!(Storefronts::next_storefront_id(), SPACE2);
 
             // Check whether data stored correctly
-            let space = Spaces::space_by_id(SPACE1).unwrap();
+            let storefront = Storefronts::storefront_by_id(SPACE1).unwrap();
 
-            assert_eq!(space.created.account, ACCOUNT1);
-            assert!(space.updated.is_none());
-            assert_eq!(space.hidden, false);
+            assert_eq!(storefront.created.account, ACCOUNT1);
+            assert!(storefront.updated.is_none());
+            assert_eq!(storefront.hidden, false);
 
-            assert_eq!(space.owner, ACCOUNT1);
-            assert_eq!(space.handle, Some(self::space_handle()));
-            assert_eq!(space.content, self::space_content_ipfs());
+            assert_eq!(storefront.owner, ACCOUNT1);
+            assert_eq!(storefront.handle, Some(self::storefront_handle()));
+            assert_eq!(storefront.content, self::storefront_content_ipfs());
 
-            assert_eq!(space.posts_count, 0);
-            assert_eq!(space.followers_count, 1);
-            assert!(SpaceHistory::edit_history(space.id).is_empty());
-            assert_eq!(space.score, 0);
+            assert_eq!(storefront.products_count, 0);
+            assert_eq!(storefront.followers_count, 1);
+            assert!(StorefrontHistory::edit_history(storefront.id).is_empty());
+            assert_eq!(storefront.score, 0);
         });
     }
 
     #[test]
-    fn create_space_should_store_handle_lowercase() {
+    fn create_storefront_should_store_handle_lowercase() {
         ExtBuilder::build().execute_with(|| {
             let handle: Vec<u8> = b"sPaCe_hAnDlE".to_vec();
 
-            assert_ok!(_create_space(None, None, Some(Some(handle.clone())), None)); // SpaceId 1
+            assert_ok!(_create_storefront(None, None, Some(Some(handle.clone())), None)); // StorefrontId 1
 
             // Handle should be lowercase in storage and original in struct
-            let space = Spaces::space_by_id(SPACE1).unwrap();
-            assert_eq!(space.handle, Some(handle.clone()));
-            assert_eq!(Spaces::space_id_by_handle(handle.to_ascii_lowercase()), Some(SPACE1));
+            let storefront = Storefronts::storefront_by_id(SPACE1).unwrap();
+            assert_eq!(storefront.handle, Some(handle.clone()));
+            assert_eq!(Storefronts::storefront_id_by_handle(handle.to_ascii_lowercase()), Some(SPACE1));
         });
     }
 
     #[test]
-    fn create_space_should_fail_with_handle_too_short() {
+    fn create_storefront_should_fail_with_handle_too_short() {
         ExtBuilder::build().execute_with(|| {
             let handle: Vec<u8> = vec![65; (MinHandleLen::get() - 1) as usize];
 
-            // Try to catch an error creating a space with too short handle
-            assert_noop!(_create_space(
+            // Try to catch an error creating a storefront with too short handle
+            assert_noop!(_create_storefront(
                 None,
                 None,
                 Some(Some(handle)),
@@ -990,12 +990,12 @@ mod tests {
     }
 
     #[test]
-    fn create_space_should_fail_with_handle_too_long() {
+    fn create_storefront_should_fail_with_handle_too_long() {
         ExtBuilder::build().execute_with(|| {
             let handle: Vec<u8> = vec![65; (MaxHandleLen::get() + 1) as usize];
 
-            // Try to catch an error creating a space with too long handle
-            assert_noop!(_create_space(
+            // Try to catch an error creating a storefront with too long handle
+            assert_noop!(_create_storefront(
                 None,
                 None,
                 Some(Some(handle)),
@@ -1005,21 +1005,21 @@ mod tests {
     }
 
     #[test]
-    fn create_space_should_fail_with_handle_not_unique() {
+    fn create_storefront_should_fail_with_handle_not_unique() {
         ExtBuilder::build().execute_with(|| {
-            assert_ok!(_create_default_space());
-            // SpaceId 1
-            // Try to catch an error creating a space with not unique handle
-            assert_noop!(_create_default_space(), SpacesError::<TestRuntime>::SpaceHandleIsNotUnique);
+            assert_ok!(_create_default_storefront());
+            // StorefrontId 1
+            // Try to catch an error creating a storefront with not unique handle
+            assert_noop!(_create_default_storefront(), StorefrontsError::<TestRuntime>::StorefrontHandleIsNotUnique);
         });
     }
 
     #[test]
-    fn create_space_should_fail_with_handle_contains_invalid_char_at() {
+    fn create_storefront_should_fail_with_handle_contains_invalid_char_at() {
         ExtBuilder::build().execute_with(|| {
-            let handle: Vec<u8> = b"@space_handle".to_vec();
+            let handle: Vec<u8> = b"@storefront_handle".to_vec();
 
-            assert_noop!(_create_space(
+            assert_noop!(_create_storefront(
                 None,
                 None,
                 Some(Some(handle)),
@@ -1029,11 +1029,11 @@ mod tests {
     }
 
     #[test]
-    fn create_space_should_fail_with_handle_contains_invalid_char_minus() {
+    fn create_storefront_should_fail_with_handle_contains_invalid_char_minus() {
         ExtBuilder::build().execute_with(|| {
-            let handle: Vec<u8> = b"space-handle".to_vec();
+            let handle: Vec<u8> = b"storefront-handle".to_vec();
 
-            assert_noop!(_create_space(
+            assert_noop!(_create_storefront(
                 None,
                 None,
                 Some(Some(handle)),
@@ -1043,11 +1043,11 @@ mod tests {
     }
 
     #[test]
-    fn create_space_should_fail_with_handle_contains_invalid_char_space() {
+    fn create_storefront_should_fail_with_handle_contains_invalid_char_storefront() {
         ExtBuilder::build().execute_with(|| {
-            let handle: Vec<u8> = b"space handle".to_vec();
+            let handle: Vec<u8> = b"storefront handle".to_vec();
 
-            assert_noop!(_create_space(
+            assert_noop!(_create_storefront(
                 None,
                 None,
                 Some(Some(handle)),
@@ -1057,11 +1057,11 @@ mod tests {
     }
 
     #[test]
-    fn create_space_should_fail_with_handle_contains_invalid_chars_unicode() {
+    fn create_storefront_should_fail_with_handle_contains_invalid_chars_unicode() {
         ExtBuilder::build().execute_with(|| {
             let handle: Vec<u8> = String::from("блог_хендл").into_bytes().to_vec();
 
-            assert_noop!(_create_space(
+            assert_noop!(_create_storefront(
                 None,
                 None,
                 Some(Some(handle)),
@@ -1071,12 +1071,12 @@ mod tests {
     }
 
     #[test]
-    fn create_space_should_fail_with_invalid_ipfs_cid() {
+    fn create_storefront_should_fail_with_invalid_ipfs_cid() {
         ExtBuilder::build().execute_with(|| {
             let content_ipfs = Content::IPFS(b"QmV9tSDx9UiPeWExXEeH6aoDvmihvx6j".to_vec());
 
-            // Try to catch an error creating a space with invalid content
-            assert_noop!(_create_space(
+            // Try to catch an error creating a storefront with invalid content
+            assert_noop!(_create_storefront(
                 None,
                 None,
                 None,
@@ -1086,49 +1086,49 @@ mod tests {
     }
 
     #[test]
-    fn update_space_should_work() {
-        ExtBuilder::build_with_space().execute_with(|| {
+    fn update_storefront_should_work() {
+        ExtBuilder::build_with_storefront().execute_with(|| {
             let handle: Vec<u8> = b"new_handle".to_vec();
             let content_ipfs = Content::IPFS(b"QmRAQB6YaCyidP37UdDnjFY5vQuiBrcqdyoW2CuDgwxkD4".to_vec());
-            // Space update with ID 1 should be fine
+            // Storefront update with ID 1 should be fine
 
-            assert_ok!(_update_space(
+            assert_ok!(_update_storefront(
                 None, // From ACCOUNT1 (has permission as he's an owner)
                 None,
                 Some(
-                    self::space_update(
+                    self::storefront_update(
                         None,
                         Some(Some(handle.clone())),
                         Some(content_ipfs.clone()),
                         Some(true),
-                        Some(Some(SpacePermissions {
+                        Some(Some(StorefrontPermissions {
                             none: None,
                             everyone: None,
                             follower: None,
-                            space_owner: None
+                            storefront_owner: None
                         })),
                     )
                 )
             ));
 
-            // Check whether space updates correctly
-            let space = Spaces::space_by_id(SPACE1).unwrap();
-            assert_eq!(space.handle, Some(handle));
-            assert_eq!(space.content, content_ipfs);
-            assert_eq!(space.hidden, true);
+            // Check whether storefront updates correctly
+            let storefront = Storefronts::storefront_by_id(SPACE1).unwrap();
+            assert_eq!(storefront.handle, Some(handle));
+            assert_eq!(storefront.content, content_ipfs);
+            assert_eq!(storefront.hidden, true);
 
             // Check whether history recorded correctly
-            let edit_history = &SpaceHistory::edit_history(space.id)[0];
-            assert_eq!(edit_history.old_data.handle, Some(Some(self::space_handle())));
-            assert_eq!(edit_history.old_data.content, Some(self::space_content_ipfs()));
+            let edit_history = &StorefrontHistory::edit_history(storefront.id)[0];
+            assert_eq!(edit_history.old_data.handle, Some(Some(self::storefront_handle())));
+            assert_eq!(edit_history.old_data.content, Some(self::storefront_content_ipfs()));
             assert_eq!(edit_history.old_data.hidden, Some(false));
         });
     }
 
     #[test]
-    fn update_space_should_work_with_a_few_roles() {
-        ExtBuilder::build_with_a_few_roles_granted_to_account2(vec![SP::UpdateSpace]).execute_with(|| {
-            let space_update = self::space_update(
+    fn update_storefront_should_work_with_a_few_roles() {
+        ExtBuilder::build_with_a_few_roles_granted_to_account2(vec![SP::UpdateStorefront]).execute_with(|| {
+            let storefront_update = self::storefront_update(
                 None,
                 Some(Some(b"new_handle".to_vec())),
                 Some(Content::IPFS(
@@ -1138,33 +1138,33 @@ mod tests {
                 None,
             );
 
-            assert_ok!(_update_space(
+            assert_ok!(_update_storefront(
                 Some(Origin::signed(ACCOUNT2)),
                 Some(SPACE1),
-                Some(space_update)
+                Some(storefront_update)
             ));
         });
     }
 
     #[test]
-    fn update_space_should_fail_with_no_updates_for_space() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            // Try to catch an error updating a space with no changes
-            assert_noop!(_update_space(None, None, None), SpacesError::<TestRuntime>::NoUpdatesForSpace);
+    fn update_storefront_should_fail_with_no_updates_for_storefront() {
+        ExtBuilder::build_with_storefront().execute_with(|| {
+            // Try to catch an error updating a storefront with no changes
+            assert_noop!(_update_storefront(None, None, None), StorefrontsError::<TestRuntime>::NoUpdatesForStorefront);
         });
     }
 
     #[test]
-    fn update_space_should_fail_with_space_not_found() {
-        ExtBuilder::build_with_space().execute_with(|| {
+    fn update_storefront_should_fail_with_storefront_not_found() {
+        ExtBuilder::build_with_storefront().execute_with(|| {
             let handle: Vec<u8> = b"new_handle".to_vec();
 
-            // Try to catch an error updating a space with wrong space ID
-            assert_noop!(_update_space(
+            // Try to catch an error updating a storefront with wrong storefront ID
+            assert_noop!(_update_storefront(
                 None,
                 Some(SPACE2),
                 Some(
-                    self::space_update(
+                    self::storefront_update(
                         None,
                         Some(Some(handle)),
                         None,
@@ -1172,21 +1172,21 @@ mod tests {
                         None,
                     )
                 )
-            ), SpacesError::<TestRuntime>::SpaceNotFound);
+            ), StorefrontsError::<TestRuntime>::StorefrontNotFound);
         });
     }
 
     #[test]
-    fn update_space_should_fail_with_no_permission() {
-        ExtBuilder::build_with_space().execute_with(|| {
+    fn update_storefront_should_fail_with_no_permission() {
+        ExtBuilder::build_with_storefront().execute_with(|| {
             let handle: Vec<u8> = b"new_handle".to_vec();
 
-            // Try to catch an error updating a space with an account that it not permitted
-            assert_noop!(_update_space(
+            // Try to catch an error updating a storefront with an account that it not permitted
+            assert_noop!(_update_storefront(
                 Some(Origin::signed(ACCOUNT2)),
                 None,
                 Some(
-                    self::space_update(
+                    self::storefront_update(
                         None,
                         Some(Some(handle)),
                         None,
@@ -1194,21 +1194,21 @@ mod tests {
                         None,
                     )
                 )
-            ), SpacesError::<TestRuntime>::NoPermissionToUpdateSpace);
+            ), StorefrontsError::<TestRuntime>::NoPermissionToUpdateStorefront);
         });
     }
 
     #[test]
-    fn update_space_should_fail_with_handle_too_short() {
-        ExtBuilder::build_with_space().execute_with(|| {
+    fn update_storefront_should_fail_with_handle_too_short() {
+        ExtBuilder::build_with_storefront().execute_with(|| {
             let handle: Vec<u8> = vec![65; (MinHandleLen::get() - 1) as usize];
 
-            // Try to catch an error updating a space with too short handle
-            assert_noop!(_update_space(
+            // Try to catch an error updating a storefront with too short handle
+            assert_noop!(_update_storefront(
                 None,
                 None,
                 Some(
-                    self::space_update(
+                    self::storefront_update(
                         None,
                         Some(Some(handle)),
                         None,
@@ -1221,16 +1221,16 @@ mod tests {
     }
 
     #[test]
-    fn update_space_should_fail_with_handle_too_long() {
-        ExtBuilder::build_with_space().execute_with(|| {
+    fn update_storefront_should_fail_with_handle_too_long() {
+        ExtBuilder::build_with_storefront().execute_with(|| {
             let handle: Vec<u8> = vec![65; (MaxHandleLen::get() + 1) as usize];
 
-            // Try to catch an error updating a space with too long handle
-            assert_noop!(_update_space(
+            // Try to catch an error updating a storefront with too long handle
+            assert_noop!(_update_storefront(
                 None,
                 None,
                 Some(
-                    self::space_update(
+                    self::storefront_update(
                         None,
                         Some(Some(handle)),
                         None,
@@ -1243,23 +1243,23 @@ mod tests {
     }
 
     #[test]
-    fn update_space_should_fail_with_handle_is_not_unique() {
-        ExtBuilder::build_with_space().execute_with(|| {
+    fn update_storefront_should_fail_with_handle_is_not_unique() {
+        ExtBuilder::build_with_storefront().execute_with(|| {
             let handle: Vec<u8> = b"unique_handle".to_vec();
 
-            assert_ok!(_create_space(
+            assert_ok!(_create_storefront(
                 None,
                 None,
                 Some(Some(handle.clone())),
                 None
-            )); // SpaceId 2 with a custom handle
+            )); // StorefrontId 2 with a custom handle
 
-                // Try to catch an error updating a space on ID 1 with a handle of space on ID 2
-                assert_noop!(_update_space(
+                // Try to catch an error updating a storefront on ID 1 with a handle of storefront on ID 2
+                assert_noop!(_update_storefront(
                 None,
                 Some(SPACE1),
                 Some(
-                    self::space_update(
+                    self::storefront_update(
                         None,
                         Some(Some(handle)),
                         None,
@@ -1267,20 +1267,20 @@ mod tests {
                         None,
                     )
                 )
-            ), SpacesError::<TestRuntime>::SpaceHandleIsNotUnique);
+            ), StorefrontsError::<TestRuntime>::StorefrontHandleIsNotUnique);
         });
     }
 
     #[test]
-    fn update_space_should_fail_with_handle_contains_invalid_char_at() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            let handle: Vec<u8> = b"@space_handle".to_vec();
+    fn update_storefront_should_fail_with_handle_contains_invalid_char_at() {
+        ExtBuilder::build_with_storefront().execute_with(|| {
+            let handle: Vec<u8> = b"@storefront_handle".to_vec();
 
-            assert_noop!(_update_space(
+            assert_noop!(_update_storefront(
                 None,
                 None,
                 Some(
-                    self::space_update(
+                    self::storefront_update(
                         None,
                         Some(Some(handle)),
                         None,
@@ -1293,15 +1293,15 @@ mod tests {
     }
 
     #[test]
-    fn update_space_should_fail_with_handle_contains_invalid_char_minus() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            let handle: Vec<u8> = b"space-handle".to_vec();
+    fn update_storefront_should_fail_with_handle_contains_invalid_char_minus() {
+        ExtBuilder::build_with_storefront().execute_with(|| {
+            let handle: Vec<u8> = b"storefront-handle".to_vec();
 
-            assert_noop!(_update_space(
+            assert_noop!(_update_storefront(
                 None,
                 None,
                 Some(
-                    self::space_update(
+                    self::storefront_update(
                         None,
                         Some(Some(handle)),
                         None,
@@ -1314,15 +1314,15 @@ mod tests {
     }
 
     #[test]
-    fn update_space_should_fail_with_handle_contains_invalid_space() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            let handle: Vec<u8> = b"space handle".to_vec();
+    fn update_storefront_should_fail_with_handle_contains_invalid_storefront() {
+        ExtBuilder::build_with_storefront().execute_with(|| {
+            let handle: Vec<u8> = b"storefront handle".to_vec();
 
-            assert_noop!(_update_space(
+            assert_noop!(_update_storefront(
                 None,
                 None,
                 Some(
-                    self::space_update(
+                    self::storefront_update(
                         None,
                         Some(Some(handle)),
                         None,
@@ -1335,15 +1335,15 @@ mod tests {
     }
 
     #[test]
-    fn update_space_should_fail_with_handle_contains_invalid_chars_unicode() {
-        ExtBuilder::build_with_space().execute_with(|| {
+    fn update_storefront_should_fail_with_handle_contains_invalid_chars_unicode() {
+        ExtBuilder::build_with_storefront().execute_with(|| {
             let handle: Vec<u8> = String::from("блог_хендл").into_bytes().to_vec();
 
-            assert_noop!(_update_space(
+            assert_noop!(_update_storefront(
                 None,
                 None,
                 Some(
-                    self::space_update(
+                    self::storefront_update(
                         None,
                         Some(Some(handle)),
                         None,
@@ -1356,16 +1356,16 @@ mod tests {
     }
 
     #[test]
-    fn update_space_should_fail_with_invalid_ipfs_cid() {
-        ExtBuilder::build_with_space().execute_with(|| {
+    fn update_storefront_should_fail_with_invalid_ipfs_cid() {
+        ExtBuilder::build_with_storefront().execute_with(|| {
             let content_ipfs = Content::IPFS(b"QmV9tSDx9UiPeWExXEeH6aoDvmihvx6j".to_vec());
 
-            // Try to catch an error updating a space with invalid content
-            assert_noop!(_update_space(
+            // Try to catch an error updating a storefront with invalid content
+            assert_noop!(_update_storefront(
                 None,
                 None,
                 Some(
-                    self::space_update(
+                    self::storefront_update(
                         None,
                         None,
                         Some(content_ipfs),
@@ -1378,9 +1378,9 @@ mod tests {
     }
 
     #[test]
-    fn update_space_should_fail_with_a_few_roles_no_permission() {
-        ExtBuilder::build_with_a_few_roles_granted_to_account2(vec![SP::UpdateSpace]).execute_with(|| {
-            let space_update = self::space_update(
+    fn update_storefront_should_fail_with_a_few_roles_no_permission() {
+        ExtBuilder::build_with_a_few_roles_granted_to_account2(vec![SP::UpdateStorefront]).execute_with(|| {
+            let storefront_update = self::storefront_update(
                 None,
                 Some(Some(b"new_handle".to_vec())),
                 Some(Content::IPFS(
@@ -1392,86 +1392,86 @@ mod tests {
 
             assert_ok!(_delete_default_role());
 
-            assert_noop!(_update_space(
+            assert_noop!(_update_storefront(
                 Some(Origin::signed(ACCOUNT2)),
                 Some(SPACE1),
-                Some(space_update)
-            ), SpacesError::<TestRuntime>::NoPermissionToUpdateSpace);
+                Some(storefront_update)
+            ), StorefrontsError::<TestRuntime>::NoPermissionToUpdateStorefront);
         });
     }
 
-    // Post tests
+    // Product tests
     #[test]
-    fn create_post_should_work() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_create_default_post()); // PostId 1 by ACCOUNT1 which is permitted by default
+    fn create_product_should_work() {
+        ExtBuilder::build_with_storefront().execute_with(|| {
+            assert_ok!(_create_default_product()); // ProductId 1 by ACCOUNT1 which is permitted by default
 
             // Check storages
-            assert_eq!(Posts::post_ids_by_space_id(SPACE1), vec![POST1]);
-            assert_eq!(Posts::next_post_id(), POST2);
+            assert_eq!(Products::product_ids_by_storefront_id(SPACE1), vec![POST1]);
+            assert_eq!(Products::next_product_id(), POST2);
 
             // Check whether data stored correctly
-            let post = Posts::post_by_id(POST1).unwrap();
+            let product = Products::product_by_id(POST1).unwrap();
 
-            assert_eq!(post.created.account, ACCOUNT1);
-            assert!(post.updated.is_none());
-            assert_eq!(post.hidden, false);
+            assert_eq!(product.created.account, ACCOUNT1);
+            assert!(product.updated.is_none());
+            assert_eq!(product.hidden, false);
 
-            assert_eq!(post.space_id, Some(SPACE1));
-            assert_eq!(post.extension, self::extension_regular_post());
+            assert_eq!(product.storefront_id, Some(SPACE1));
+            assert_eq!(product.extension, self::extension_regular_product());
 
-            assert_eq!(post.content, self::post_content_ipfs());
+            assert_eq!(product.content, self::product_content_ipfs());
 
-            assert_eq!(post.replies_count, 0);
-            assert_eq!(post.hidden_replies_count, 0);
-            assert_eq!(post.shares_count, 0);
-            assert_eq!(post.upvotes_count, 0);
-            assert_eq!(post.downvotes_count, 0);
+            assert_eq!(product.replies_count, 0);
+            assert_eq!(product.hidden_replies_count, 0);
+            assert_eq!(product.shares_count, 0);
+            assert_eq!(product.upvotes_count, 0);
+            assert_eq!(product.downvotes_count, 0);
 
-            assert_eq!(post.score, 0);
+            assert_eq!(product.score, 0);
 
-            assert!(PostHistory::edit_history(POST1).is_empty());
+            assert!(ProductHistory::edit_history(POST1).is_empty());
         });
     }
 
     #[test]
-    fn create_post_should_work_with_a_few_roles() {
-        ExtBuilder::build_with_a_few_roles_granted_to_account2(vec![SP::CreatePosts]).execute_with(|| {
-            assert_ok!(_create_post(
+    fn create_product_should_work_with_a_few_roles() {
+        ExtBuilder::build_with_a_few_roles_granted_to_account2(vec![SP::CreateProducts]).execute_with(|| {
+            assert_ok!(_create_product(
                 Some(Origin::signed(ACCOUNT2)),
-                None, // SpaceId 1,
-                None, // RegularPost extension
-                None, // Default post content
+                None, // StorefrontId 1,
+                None, // RegularProduct extension
+                None, // Default product content
             ));
         });
     }
 
     #[test]
-    fn create_post_should_fail_with_post_has_no_spaceid() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_noop!(_create_post(
+    fn create_product_should_fail_with_product_has_no_storefrontid() {
+        ExtBuilder::build_with_storefront().execute_with(|| {
+            assert_noop!(_create_product(
                 None,
                 Some(None),
                 None,
                 None
-            ), PostsError::<TestRuntime>::PostHasNoSpaceId);
+            ), ProductsError::<TestRuntime>::ProductHasNoStorefrontId);
         });
     }
 
     #[test]
-    fn create_post_should_fail_with_space_not_found() {
+    fn create_product_should_fail_with_storefront_not_found() {
         ExtBuilder::build().execute_with(|| {
-            assert_noop!(_create_default_post(), SpacesError::<TestRuntime>::SpaceNotFound);
+            assert_noop!(_create_default_product(), StorefrontsError::<TestRuntime>::StorefrontNotFound);
         });
     }
 
     #[test]
-    fn create_post_should_fail_with_invalid_ipfs_cid() {
-        ExtBuilder::build_with_space().execute_with(|| {
+    fn create_product_should_fail_with_invalid_ipfs_cid() {
+        ExtBuilder::build_with_storefront().execute_with(|| {
             let content_ipfs = Content::IPFS(b"QmV9tSDx9UiPeWExXEeH6aoDvmihvx6j".to_vec());
 
-            // Try to catch an error creating a regular post with invalid content
-            assert_noop!(_create_post(
+            // Try to catch an error creating a regular product with invalid content
+            assert_noop!(_create_product(
                 None,
                 None,
                 None,
@@ -1481,42 +1481,42 @@ mod tests {
     }
 
     #[test]
-    fn create_post_should_fail_with_no_permission() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_noop!(_create_post(
+    fn create_product_should_fail_with_no_permission() {
+        ExtBuilder::build_with_storefront().execute_with(|| {
+            assert_noop!(_create_product(
                 Some(Origin::signed(ACCOUNT2)),
                 None,
                 None,
                 None
-            ), PostsError::<TestRuntime>::NoPermissionToCreatePosts);
+            ), ProductsError::<TestRuntime>::NoPermissionToCreateProducts);
         });
     }
 
     #[test]
-    fn create_post_should_fail_with_a_few_roles_no_permission() {
-        ExtBuilder::build_with_a_few_roles_granted_to_account2(vec![SP::CreatePosts]).execute_with(|| {
+    fn create_product_should_fail_with_a_few_roles_no_permission() {
+        ExtBuilder::build_with_a_few_roles_granted_to_account2(vec![SP::CreateProducts]).execute_with(|| {
             assert_ok!(_delete_default_role());
 
-            assert_noop!(_create_post(
+            assert_noop!(_create_product(
                 Some(Origin::signed(ACCOUNT2)),
-                None, // SpaceId 1,
-                None, // RegularPost extension
-                None, // Default post content
-            ), PostsError::<TestRuntime>::NoPermissionToCreatePosts);
+                None, // StorefrontId 1,
+                None, // RegularProduct extension
+                None, // Default product content
+            ), ProductsError::<TestRuntime>::NoPermissionToCreateProducts);
         });
     }
 
     #[test]
-    fn update_post_should_work() {
-        ExtBuilder::build_with_post().execute_with(|| {
+    fn update_product_should_work() {
+        ExtBuilder::build_with_product().execute_with(|| {
             let content_ipfs = Content::IPFS(b"QmRAQB6YaCyidP37UdDnjFY5vQuiBrcqdyoW1CuDgwxkD4".to_vec());
 
-            // Post update with ID 1 should be fine
-            assert_ok!(_update_post(
-                None, // From ACCOUNT1 (has default permission to UpdateOwnPosts)
+            // Product update with ID 1 should be fine
+            assert_ok!(_update_product(
+                None, // From ACCOUNT1 (has default permission to UpdateOwnProducts)
                 None,
                 Some(
-                    self::post_update(
+                    self::product_update(
                         None,
                         Some(content_ipfs.clone()),
                         Some(true)
@@ -1524,24 +1524,24 @@ mod tests {
                 )
             ));
 
-            // Check whether post updates correctly
-            let post = Posts::post_by_id(POST1).unwrap();
-            assert_eq!(post.space_id, Some(SPACE1));
-            assert_eq!(post.content, content_ipfs);
-            assert_eq!(post.hidden, true);
+            // Check whether product updates correctly
+            let product = Products::product_by_id(POST1).unwrap();
+            assert_eq!(product.storefront_id, Some(SPACE1));
+            assert_eq!(product.content, content_ipfs);
+            assert_eq!(product.hidden, true);
 
             // Check whether history recorded correctly
-            let post_history = PostHistory::edit_history(POST1)[0].clone();
-            assert!(post_history.old_data.space_id.is_none());
-            assert_eq!(post_history.old_data.content, Some(self::post_content_ipfs()));
-            assert_eq!(post_history.old_data.hidden, Some(false));
+            let product_history = ProductHistory::edit_history(POST1)[0].clone();
+            assert!(product_history.old_data.storefront_id.is_none());
+            assert_eq!(product_history.old_data.content, Some(self::product_content_ipfs()));
+            assert_eq!(product_history.old_data.hidden, Some(false));
         });
     }
 
     #[test]
-    fn update_post_should_work_after_transfer_space_ownership() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            let post_update = self::post_update(
+    fn update_product_should_work_after_transfer_storefront_ownership() {
+        ExtBuilder::build_with_product().execute_with(|| {
+            let product_update = self::product_update(
                 None,
                 Some(Content::IPFS(
                     b"QmRAQB6YaCyidP37UdDnjFY5vQuiBrcqdyoW1CuDgwxkD4".to_vec()
@@ -1549,121 +1549,121 @@ mod tests {
                 Some(true),
             );
 
-            assert_ok!(_transfer_default_space_ownership());
+            assert_ok!(_transfer_default_storefront_ownership());
 
-            // Post update with ID 1 should be fine
-            assert_ok!(_update_post(None, None, Some(post_update)));
+            // Product update with ID 1 should be fine
+            assert_ok!(_update_product(None, None, Some(product_update)));
         });
     }
 
     #[test]
-    fn update_any_post_should_work_with_default_permission() {
-        ExtBuilder::build_with_a_few_roles_granted_to_account2(vec![SP::CreatePosts]).execute_with(|| {
-            let post_update = self::post_update(
+    fn update_any_product_should_work_with_default_permission() {
+        ExtBuilder::build_with_a_few_roles_granted_to_account2(vec![SP::CreateProducts]).execute_with(|| {
+            let product_update = self::product_update(
                 None,
                 Some(Content::IPFS(
                     b"QmRAQB6YaCyidP37UdDnjFY5vQuiBrcqdyoW1CuDgwxkD4".to_vec()
                 )),
                 Some(true),
             );
-            assert_ok!(_create_post(
+            assert_ok!(_create_product(
                 Some(Origin::signed(ACCOUNT2)),
-                None, // SpaceId 1
-                None, // RegularPost extension
-                None // Default post content
-            )); // PostId 1
+                None, // StorefrontId 1
+                None, // RegularProduct extension
+                None // Default product content
+            )); // ProductId 1
 
-            // Post update with ID 1 should be fine
-            assert_ok!(_update_post(
-                None, // From ACCOUNT1 (has default permission to UpdateAnyPosts as SpaceOwner)
+            // Product update with ID 1 should be fine
+            assert_ok!(_update_product(
+                None, // From ACCOUNT1 (has default permission to UpdateAnyProducts as StorefrontOwner)
                 Some(POST1),
-                Some(post_update)
+                Some(product_update)
             ));
         });
     }
 
     #[test]
-    fn update_any_post_should_work_with_a_few_roles() {
-        ExtBuilder::build_with_a_few_roles_granted_to_account2(vec![SP::UpdateAnyPost]).execute_with(|| {
-            let post_update = self::post_update(
+    fn update_any_product_should_work_with_a_few_roles() {
+        ExtBuilder::build_with_a_few_roles_granted_to_account2(vec![SP::UpdateAnyProduct]).execute_with(|| {
+            let product_update = self::product_update(
                 None,
                 Some(Content::IPFS(
                     b"QmRAQB6YaCyidP37UdDnjFY5vQuiBrcqdyoW1CuDgwxkD4".to_vec()
                 )),
                 Some(true),
             );
-            assert_ok!(_create_default_post()); // PostId 1
+            assert_ok!(_create_default_product()); // ProductId 1
 
-            // Post update with ID 1 should be fine
-            assert_ok!(_update_post(
+            // Product update with ID 1 should be fine
+            assert_ok!(_update_product(
                 Some(Origin::signed(ACCOUNT2)),
                 Some(POST1),
-                Some(post_update)
+                Some(product_update)
             ));
         });
     }
 
     #[test]
-    fn update_post_should_fail_with_no_updates_for_post() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            // Try to catch an error updating a post with no changes
-            assert_noop!(_update_post(None, None, None), PostsError::<TestRuntime>::NoUpdatesForPost);
+    fn update_product_should_fail_with_no_updates_for_product() {
+        ExtBuilder::build_with_product().execute_with(|| {
+            // Try to catch an error updating a product with no changes
+            assert_noop!(_update_product(None, None, None), ProductsError::<TestRuntime>::NoUpdatesForProduct);
         });
     }
 
     #[test]
-    fn update_post_should_fail_with_post_not_found() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_create_space(None, None, Some(Some(b"space2_handle".to_vec())), None)); // SpaceId 2
+    fn update_product_should_fail_with_product_not_found() {
+        ExtBuilder::build_with_product().execute_with(|| {
+            assert_ok!(_create_storefront(None, None, Some(Some(b"storefront2_handle".to_vec())), None)); // StorefrontId 2
 
-            // Try to catch an error updating a post with wrong post ID
-            assert_noop!(_update_post(
+            // Try to catch an error updating a product with wrong product ID
+            assert_noop!(_update_product(
                 None,
                 Some(POST2),
                 Some(
-                    self::post_update(
-                        // FIXME: when Post's `space_id` update is fully implemented
+                    self::product_update(
+                        // FIXME: when Product's `storefront_id` update is fully implemented
                         None/*Some(SPACE2)*/,
                         None,
                         Some(true)/*None*/
                     )
                 )
-            ), PostsError::<TestRuntime>::PostNotFound);
+            ), ProductsError::<TestRuntime>::ProductNotFound);
         });
     }
 
     #[test]
-    fn update_post_should_fail_with_no_permission_to_update_any_post() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_create_space(None, None, Some(Some(b"space2_handle".to_vec())), None)); // SpaceId 2
+    fn update_product_should_fail_with_no_permission_to_update_any_product() {
+        ExtBuilder::build_with_product().execute_with(|| {
+            assert_ok!(_create_storefront(None, None, Some(Some(b"storefront2_handle".to_vec())), None)); // StorefrontId 2
 
-            // Try to catch an error updating a post with different account
-            assert_noop!(_update_post(
+            // Try to catch an error updating a product with different account
+            assert_noop!(_update_product(
                 Some(Origin::signed(ACCOUNT2)),
                 None,
                 Some(
-                    self::post_update(
-                        // FIXME: when Post's `space_id` update is fully implemented
+                    self::product_update(
+                        // FIXME: when Product's `storefront_id` update is fully implemented
                         None/*Some(SPACE2)*/,
                         None,
                         Some(true)/*None*/
                     )
                 )
-            ), PostsError::<TestRuntime>::NoPermissionToUpdateAnyPost);
+            ), ProductsError::<TestRuntime>::NoPermissionToUpdateAnyProduct);
         });
     }
 
     #[test]
-    fn update_post_should_fail_with_invalid_ipfs_cid() {
-        ExtBuilder::build_with_post().execute_with(|| {
+    fn update_product_should_fail_with_invalid_ipfs_cid() {
+        ExtBuilder::build_with_product().execute_with(|| {
             let content_ipfs = Content::IPFS(b"QmV9tSDx9UiPeWExXEeH6aoDvmihvx6j".to_vec());
 
-            // Try to catch an error updating a post with invalid content
-            assert_noop!(_update_post(
+            // Try to catch an error updating a product with invalid content
+            assert_noop!(_update_product(
                 None,
                 None,
                 Some(
-                    self::post_update(
+                    self::product_update(
                         None,
                         Some(content_ipfs),
                         None
@@ -1674,46 +1674,46 @@ mod tests {
     }
 
     #[test]
-    fn update_any_post_should_fail_with_a_few_roles_no_permission() {
-        ExtBuilder::build_with_a_few_roles_granted_to_account2(vec![SP::UpdateAnyPost]).execute_with(|| {
-            let post_update = self::post_update(
+    fn update_any_product_should_fail_with_a_few_roles_no_permission() {
+        ExtBuilder::build_with_a_few_roles_granted_to_account2(vec![SP::UpdateAnyProduct]).execute_with(|| {
+            let product_update = self::product_update(
                 None,
                 Some(Content::IPFS(
                     b"QmRAQB6YaCyidP37UdDnjFY5vQuiBrcqdyoW1CuDgwxkD4".to_vec()
                 )),
                 Some(true),
             );
-            assert_ok!(_create_default_post());
-            // PostId 1
+            assert_ok!(_create_default_product());
+            // ProductId 1
             assert_ok!(_delete_default_role());
 
-            // Post update with ID 1 should be fine
-            assert_noop!(_update_post(
+            // Product update with ID 1 should be fine
+            assert_noop!(_update_product(
                 Some(Origin::signed(ACCOUNT2)),
                 Some(POST1),
-                Some(post_update)
-            ), PostsError::<TestRuntime>::NoPermissionToUpdateAnyPost);
+                Some(product_update)
+            ), ProductsError::<TestRuntime>::NoPermissionToUpdateAnyProduct);
         });
     }
 
     // Comment tests
     #[test]
     fn create_comment_should_work() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_create_default_comment()); // PostId 2 by ACCOUNT1 which is permitted by default
+        ExtBuilder::build_with_product().execute_with(|| {
+            assert_ok!(_create_default_comment()); // ProductId 2 by ACCOUNT1 which is permitted by default
 
             // Check storages
-            let root_post = Posts::post_by_id(POST1).unwrap();
-            assert_eq!(Posts::reply_ids_by_post_id(POST1), vec![POST2]);
-            assert_eq!(root_post.replies_count, 1);
-            assert_eq!(root_post.hidden_replies_count, 0);
+            let root_product = Products::product_by_id(POST1).unwrap();
+            assert_eq!(Products::reply_ids_by_product_id(POST1), vec![POST2]);
+            assert_eq!(root_product.replies_count, 1);
+            assert_eq!(root_product.hidden_replies_count, 0);
 
             // Check whether data stored correctly
-            let comment = Posts::post_by_id(POST2).unwrap();
+            let comment = Products::product_by_id(POST2).unwrap();
             let comment_ext = comment.get_comment_ext().unwrap();
 
             assert!(comment_ext.parent_id.is_none());
-            assert_eq!(comment_ext.root_post_id, POST1);
+            assert_eq!(comment_ext.root_product_id, POST1);
             assert_eq!(comment.created.account, ACCOUNT1);
             assert!(comment.updated.is_none());
             assert_eq!(comment.content, self::comment_content_ipfs());
@@ -1724,63 +1724,63 @@ mod tests {
             assert_eq!(comment.downvotes_count, 0);
             assert_eq!(comment.score, 0);
 
-            assert!(PostHistory::edit_history(POST2).is_empty());
+            assert!(ProductHistory::edit_history(POST2).is_empty());
         });
     }
 
     #[test]
     fn create_comment_should_work_with_parents() {
         ExtBuilder::build_with_comment().execute_with(|| {
-            let first_comment_id: PostId = 2;
-            let penultimate_comment_id: PostId = 8;
-            let last_comment_id: PostId = 9;
+            let first_comment_id: ProductId = 2;
+            let penultimate_comment_id: ProductId = 8;
+            let last_comment_id: ProductId = 9;
 
-            for parent_id in first_comment_id..last_comment_id as PostId {
+            for parent_id in first_comment_id..last_comment_id as ProductId {
                 // last created = `last_comment_id`; last parent = `penultimate_comment_id`
                 assert_ok!(_create_comment(None, None, Some(Some(parent_id)), None));
             }
 
-            for comment_id in first_comment_id..penultimate_comment_id as PostId {
-                let comment = Posts::post_by_id(comment_id).unwrap();
+            for comment_id in first_comment_id..penultimate_comment_id as ProductId {
+                let comment = Products::product_by_id(comment_id).unwrap();
                 let replies_should_be = last_comment_id-comment_id;
                 assert_eq!(comment.replies_count, replies_should_be as u16);
-                assert_eq!(Posts::reply_ids_by_post_id(comment_id), vec![comment_id + 1]);
+                assert_eq!(Products::reply_ids_by_product_id(comment_id), vec![comment_id + 1]);
 
                 assert_eq!(comment.hidden_replies_count, 0);
             }
 
-            let last_comment = Posts::post_by_id(last_comment_id).unwrap();
+            let last_comment = Products::product_by_id(last_comment_id).unwrap();
             assert_eq!(last_comment.replies_count, 0);
-            assert!(Posts::reply_ids_by_post_id(last_comment_id).is_empty());
+            assert!(Products::reply_ids_by_product_id(last_comment_id).is_empty());
 
             assert_eq!(last_comment.hidden_replies_count, 0);
         });
     }
 
     #[test]
-    fn create_comment_should_fail_with_post_not_found() {
+    fn create_comment_should_fail_with_product_not_found() {
         ExtBuilder::build().execute_with(|| {
-            // Try to catch an error creating a comment with wrong post
-            assert_noop!(_create_default_comment(), PostsError::<TestRuntime>::PostNotFound);
+            // Try to catch an error creating a comment with wrong product
+            assert_noop!(_create_default_comment(), ProductsError::<TestRuntime>::ProductNotFound);
         });
     }
 
     #[test]
     fn create_comment_should_fail_with_unknown_parent_comment() {
-        ExtBuilder::build_with_post().execute_with(|| {
+        ExtBuilder::build_with_product().execute_with(|| {
             // Try to catch an error creating a comment with wrong parent
             assert_noop!(_create_comment(
                 None,
                 None,
                 Some(Some(POST2)),
                 None
-            ), PostsError::<TestRuntime>::UnknownParentComment);
+            ), ProductsError::<TestRuntime>::UnknownParentComment);
         });
     }
 
     #[test]
     fn create_comment_should_fail_with_invalid_ipfs_cid() {
-        ExtBuilder::build_with_post().execute_with(|| {
+        ExtBuilder::build_with_product().execute_with(|| {
             let content_ipfs = Content::IPFS(b"QmV9tSDx9UiPeWExXEeH6aoDvmihvx6j".to_vec());
 
             // Try to catch an error creating a comment with wrong parent
@@ -1794,73 +1794,73 @@ mod tests {
     }
 
     #[test]
-    fn create_comment_should_fail_with_cannot_create_in_hidden_space_scope() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_update_space(
+    fn create_comment_should_fail_with_cannot_create_in_hidden_storefront_scope() {
+        ExtBuilder::build_with_product().execute_with(|| {
+            assert_ok!(_update_storefront(
                 None,
                 None,
-                Some(self::space_update(None, None, None, Some(true), None))
+                Some(self::storefront_update(None, None, None, Some(true), None))
             ));
 
-            assert_noop!(_create_default_comment(), PostsError::<TestRuntime>::CannotCreateInHiddenScope);
+            assert_noop!(_create_default_comment(), ProductsError::<TestRuntime>::CannotCreateInHiddenScope);
         });
     }
 
     #[test]
-    fn create_comment_should_fail_with_cannot_create_in_hidden_post_scope() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_update_post(
+    fn create_comment_should_fail_with_cannot_create_in_hidden_product_scope() {
+        ExtBuilder::build_with_product().execute_with(|| {
+            assert_ok!(_update_product(
                 None,
                 None,
-                Some(self::post_update(None, None, Some(true)))
+                Some(self::product_update(None, None, Some(true)))
             ));
 
-            assert_noop!(_create_default_comment(), PostsError::<TestRuntime>::CannotCreateInHiddenScope);
+            assert_noop!(_create_default_comment(), ProductsError::<TestRuntime>::CannotCreateInHiddenScope);
         });
     }
 
     #[test]
     fn create_comment_should_fail_with_max_comment_depth_reached() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_create_comment(None, None, Some(None), None)); // PostId 2
+        ExtBuilder::build_with_product().execute_with(|| {
+            assert_ok!(_create_comment(None, None, Some(None), None)); // ProductId 2
 
-            for parent_id in 2..11 as PostId {
-                assert_ok!(_create_comment(None, None, Some(Some(parent_id)), None)); // PostId N (last = 10)
+            for parent_id in 2..11 as ProductId {
+                assert_ok!(_create_comment(None, None, Some(Some(parent_id)), None)); // ProductId N (last = 10)
             }
 
-            // Some(Some(11)) - here is parent_id 11 of type PostId
+            // Some(Some(11)) - here is parent_id 11 of type ProductId
             assert_noop!(_create_comment(
                 None,
                 None,
                 Some(Some(11)),
                 None
-            ), PostsError::<TestRuntime>::MaxCommentDepthReached);
+            ), ProductsError::<TestRuntime>::MaxCommentDepthReached);
         });
     }
 
     #[test]
     fn update_comment_should_work() {
         ExtBuilder::build_with_comment().execute_with(|| {
-            // Post update with ID 1 should be fine
+            // Product update with ID 1 should be fine
             assert_ok!(_update_comment(None, None, None));
 
-            // Check whether post updates correctly
-            let comment = Posts::post_by_id(POST2).unwrap();
+            // Check whether product updates correctly
+            let comment = Products::product_by_id(POST2).unwrap();
             assert_eq!(comment.content, self::reply_content_ipfs());
 
             // Check whether history recorded correctly
-            assert_eq!(PostHistory::edit_history(POST2)[0].old_data.content, Some(self::comment_content_ipfs()));
+            assert_eq!(ProductHistory::edit_history(POST2)[0].old_data.content, Some(self::comment_content_ipfs()));
         });
     }
 
     #[test]
     fn update_comment_hidden_should_work_with_parents() {
         ExtBuilder::build_with_comment().execute_with(|| {
-            let first_comment_id: PostId = 2;
-            let penultimate_comment_id: PostId = 8;
-            let last_comment_id: PostId = 9;
+            let first_comment_id: ProductId = 2;
+            let penultimate_comment_id: ProductId = 8;
+            let last_comment_id: ProductId = 9;
 
-            for parent_id in first_comment_id..last_comment_id as PostId {
+            for parent_id in first_comment_id..last_comment_id as ProductId {
                 // last created = `last_comment_id`; last parent = `penultimate_comment_id`
                 assert_ok!(_create_comment(None, None, Some(Some(parent_id)), None));
             }
@@ -1868,28 +1868,28 @@ mod tests {
             assert_ok!(_update_comment(
                 None,
                 Some(last_comment_id),
-                Some(self::post_update(
+                Some(self::product_update(
                     None,
                     None,
                     Some(true) // make comment hidden
                 ))
             ));
 
-            for comment_id in first_comment_id..penultimate_comment_id as PostId {
-                let comment = Posts::post_by_id(comment_id).unwrap();
+            for comment_id in first_comment_id..penultimate_comment_id as ProductId {
+                let comment = Products::product_by_id(comment_id).unwrap();
                 assert_eq!(comment.hidden_replies_count, 1);
             }
-            let last_comment = Posts::post_by_id(last_comment_id).unwrap();
+            let last_comment = Products::product_by_id(last_comment_id).unwrap();
             assert_eq!(last_comment.hidden_replies_count, 0);
         });
     }
 
     #[test]
-    // `PostNotFound` here: Post with Comment extension. Means that comment wasn't found.
-    fn update_comment_should_fail_with_post_not_found() {
+    // `ProductNotFound` here: Product with Comment extension. Means that comment wasn't found.
+    fn update_comment_should_fail_with_product_not_found() {
         ExtBuilder::build().execute_with(|| {
-            // Try to catch an error updating a comment with wrong PostId
-            assert_noop!(_update_comment(None, None, None), PostsError::<TestRuntime>::PostNotFound);
+            // Try to catch an error updating a comment with wrong ProductId
+            assert_noop!(_update_comment(None, None, None), ProductsError::<TestRuntime>::ProductNotFound);
         });
     }
 
@@ -1901,7 +1901,7 @@ mod tests {
                 Some(Origin::signed(ACCOUNT2)),
                 None,
                 None
-            ), PostsError::<TestRuntime>::NotACommentAuthor);
+            ), ProductsError::<TestRuntime>::NotACommentAuthor);
         });
     }
 
@@ -1915,7 +1915,7 @@ mod tests {
                 None,
                 None,
                 Some(
-                    self::post_update(
+                    self::product_update(
                         None,
                         Some(content_ipfs),
                         None
@@ -1927,22 +1927,22 @@ mod tests {
 
     // Reaction tests
     #[test]
-    fn create_post_reaction_should_work_upvote() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_create_post_reaction(
+    fn create_product_reaction_should_work_upvote() {
+        ExtBuilder::build_with_product().execute_with(|| {
+            assert_ok!(_create_product_reaction(
                 Some(Origin::signed(ACCOUNT2)),
                 None,
                 None
             )); // ReactionId 1 by ACCOUNT2 which is permitted by default
 
             // Check storages
-            assert_eq!(Reactions::reaction_ids_by_post_id(POST1), vec![REACTION1]);
+            assert_eq!(Reactions::reaction_ids_by_product_id(POST1), vec![REACTION1]);
             assert_eq!(Reactions::next_reaction_id(), REACTION2);
 
-            // Check post reaction counters
-            let post = Posts::post_by_id(POST1).unwrap();
-            assert_eq!(post.upvotes_count, 1);
-            assert_eq!(post.downvotes_count, 0);
+            // Check product reaction counters
+            let product = Products::product_by_id(POST1).unwrap();
+            assert_eq!(product.upvotes_count, 1);
+            assert_eq!(product.downvotes_count, 0);
 
             // Check whether data stored correctly
             let reaction = Reactions::reaction_by_id(REACTION1).unwrap();
@@ -1952,22 +1952,22 @@ mod tests {
     }
 
     #[test]
-    fn create_post_reaction_should_work_downvote() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_create_post_reaction(
+    fn create_product_reaction_should_work_downvote() {
+        ExtBuilder::build_with_product().execute_with(|| {
+            assert_ok!(_create_product_reaction(
                 Some(Origin::signed(ACCOUNT2)),
                 None,
                 Some(self::reaction_downvote())
             )); // ReactionId 1 by ACCOUNT2 which is permitted by default
 
             // Check storages
-            assert_eq!(Reactions::reaction_ids_by_post_id(POST1), vec![REACTION1]);
+            assert_eq!(Reactions::reaction_ids_by_product_id(POST1), vec![REACTION1]);
             assert_eq!(Reactions::next_reaction_id(), REACTION2);
 
-            // Check post reaction counters
-            let post = Posts::post_by_id(POST1).unwrap();
-            assert_eq!(post.upvotes_count, 0);
-            assert_eq!(post.downvotes_count, 1);
+            // Check product reaction counters
+            let product = Products::product_by_id(POST1).unwrap();
+            assert_eq!(product.upvotes_count, 0);
+            assert_eq!(product.downvotes_count, 1);
 
             // Check whether data stored correctly
             let reaction = Reactions::reaction_by_id(REACTION1).unwrap();
@@ -1977,46 +1977,46 @@ mod tests {
     }
 
     #[test]
-    fn create_post_reaction_should_fail_with_account_already_reacted() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_create_default_post_reaction()); // ReactionId1
+    fn create_product_reaction_should_fail_with_account_already_reacted() {
+        ExtBuilder::build_with_product().execute_with(|| {
+            assert_ok!(_create_default_product_reaction()); // ReactionId1
 
             // Try to catch an error creating reaction by the same account
-            assert_noop!(_create_default_post_reaction(), ReactionsError::<TestRuntime>::AccountAlreadyReacted);
+            assert_noop!(_create_default_product_reaction(), ReactionsError::<TestRuntime>::AccountAlreadyReacted);
         });
     }
 
     #[test]
-    fn create_post_reaction_should_fail_with_post_not_found() {
+    fn create_product_reaction_should_fail_with_product_not_found() {
         ExtBuilder::build().execute_with(|| {
             // Try to catch an error creating reaction by the same account
-            assert_noop!(_create_default_post_reaction(), PostsError::<TestRuntime>::PostNotFound);
+            assert_noop!(_create_default_product_reaction(), ProductsError::<TestRuntime>::ProductNotFound);
         });
     }
 
     #[test]
-    fn create_post_reaction_should_fail_with_cannot_react_when_space_hidden() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_update_space(
+    fn create_product_reaction_should_fail_with_cannot_react_when_storefront_hidden() {
+        ExtBuilder::build_with_product().execute_with(|| {
+            assert_ok!(_update_storefront(
                 None,
                 None,
-                Some(self::space_update(None, None, None, Some(true), None))
+                Some(self::storefront_update(None, None, None, Some(true), None))
             ));
 
-            assert_noop!(_create_default_post_reaction(), ReactionsError::<TestRuntime>::CannotReactWhenSpaceHidden);
+            assert_noop!(_create_default_product_reaction(), ReactionsError::<TestRuntime>::CannotReactWhenStorefrontHidden);
         });
     }
 
     #[test]
-    fn create_post_reaction_should_fail_with_cannot_react_when_post_hidden() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_update_post(
+    fn create_product_reaction_should_fail_with_cannot_react_when_product_hidden() {
+        ExtBuilder::build_with_product().execute_with(|| {
+            assert_ok!(_update_product(
                 None,
                 None,
-                Some(self::post_update(None, None, Some(true)))
+                Some(self::product_update(None, None, Some(true)))
             ));
 
-            assert_noop!(_create_default_post_reaction(), ReactionsError::<TestRuntime>::CannotReactWhenPostHidden);
+            assert_noop!(_create_default_product_reaction(), ReactionsError::<TestRuntime>::CannotReactWhenProductHidden);
         });
     }
 
@@ -2025,14 +2025,14 @@ mod tests {
     #[test]
     fn check_results_of_score_diff_for_action_with_common_values() {
         ExtBuilder::build().execute_with(|| {
-            assert_eq!(Scores::score_diff_for_action(1, self::scoring_action_upvote_post()), UpvotePostActionWeight::get() as i16);
-            assert_eq!(Scores::score_diff_for_action(1, self::scoring_action_downvote_post()), DownvotePostActionWeight::get() as i16);
-            assert_eq!(Scores::score_diff_for_action(1, self::scoring_action_share_post()), SharePostActionWeight::get() as i16);
+            assert_eq!(Scores::score_diff_for_action(1, self::scoring_action_upvote_product()), UpvoteProductActionWeight::get() as i16);
+            assert_eq!(Scores::score_diff_for_action(1, self::scoring_action_downvote_product()), DownvoteProductActionWeight::get() as i16);
+            assert_eq!(Scores::score_diff_for_action(1, self::scoring_action_share_product()), ShareProductActionWeight::get() as i16);
             assert_eq!(Scores::score_diff_for_action(1, self::scoring_action_create_comment()), CreateCommentActionWeight::get() as i16);
             assert_eq!(Scores::score_diff_for_action(1, self::scoring_action_upvote_comment()), UpvoteCommentActionWeight::get() as i16);
             assert_eq!(Scores::score_diff_for_action(1, self::scoring_action_downvote_comment()), DownvoteCommentActionWeight::get() as i16);
             assert_eq!(Scores::score_diff_for_action(1, self::scoring_action_share_comment()), ShareCommentActionWeight::get() as i16);
-            assert_eq!(Scores::score_diff_for_action(1, self::scoring_action_follow_space()), FollowSpaceActionWeight::get() as i16);
+            assert_eq!(Scores::score_diff_for_action(1, self::scoring_action_follow_storefront()), FollowStorefrontActionWeight::get() as i16);
             assert_eq!(Scores::score_diff_for_action(1, self::scoring_action_follow_account()), FollowAccountActionWeight::get() as i16);
         });
     }
@@ -2040,67 +2040,67 @@ mod tests {
     #[test]
     fn check_results_of_score_diff_for_action_with_random_values() {
         ExtBuilder::build().execute_with(|| {
-            assert_eq!(Scores::score_diff_for_action(32768, self::scoring_action_upvote_post()), 80); // 2^15
-            assert_eq!(Scores::score_diff_for_action(32769, self::scoring_action_upvote_post()), 80); // 2^15 + 1
-            assert_eq!(Scores::score_diff_for_action(65535, self::scoring_action_upvote_post()), 80); // 2^16 - 1
-            assert_eq!(Scores::score_diff_for_action(65536, self::scoring_action_upvote_post()), 85); // 2^16
+            assert_eq!(Scores::score_diff_for_action(32768, self::scoring_action_upvote_product()), 80); // 2^15
+            assert_eq!(Scores::score_diff_for_action(32769, self::scoring_action_upvote_product()), 80); // 2^15 + 1
+            assert_eq!(Scores::score_diff_for_action(65535, self::scoring_action_upvote_product()), 80); // 2^16 - 1
+            assert_eq!(Scores::score_diff_for_action(65536, self::scoring_action_upvote_product()), 85); // 2^16
         });
     }
 
 //--------------------------------------------------------------------------------------------------
 
     #[test]
-    fn change_space_score_should_work_for_follow_space() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_follow_space(
+    fn change_storefront_score_should_work_for_follow_storefront() {
+        ExtBuilder::build_with_storefront().execute_with(|| {
+            assert_ok!(_follow_storefront(
                 Some(Origin::signed(ACCOUNT2)),
                 Some(SPACE1)
             ));
 
-            assert_eq!(Spaces::space_by_id(SPACE1).unwrap().score, FollowSpaceActionWeight::get() as i32);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1 + FollowSpaceActionWeight::get() as u32);
+            assert_eq!(Storefronts::storefront_by_id(SPACE1).unwrap().score, FollowStorefrontActionWeight::get() as i32);
+            assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1 + FollowStorefrontActionWeight::get() as u32);
             assert_eq!(Profiles::social_account_by_id(ACCOUNT2).unwrap().reputation, 1);
         });
     }
 
     #[test]
-    fn change_space_score_should_work_for_unfollow_space() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_follow_space(
+    fn change_storefront_score_should_work_for_unfollow_storefront() {
+        ExtBuilder::build_with_storefront().execute_with(|| {
+            assert_ok!(_follow_storefront(
                 Some(Origin::signed(ACCOUNT2)),
                 Some(SPACE1)
             ));
-            assert_ok!(_unfollow_space(
+            assert_ok!(_unfollow_storefront(
                 Some(Origin::signed(ACCOUNT2)),
                 Some(SPACE1)
             ));
 
-            assert_eq!(Spaces::space_by_id(SPACE1).unwrap().score, 0);
+            assert_eq!(Storefronts::storefront_by_id(SPACE1).unwrap().score, 0);
             assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1);
             assert_eq!(Profiles::social_account_by_id(ACCOUNT2).unwrap().reputation, 1);
         });
     }
 
     #[test]
-    fn change_space_score_should_work_for_upvote_post() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_create_post_reaction(Some(Origin::signed(ACCOUNT2)), None, None)); // ReactionId 1
+    fn change_storefront_score_should_work_for_upvote_product() {
+        ExtBuilder::build_with_product().execute_with(|| {
+            assert_ok!(_create_product_reaction(Some(Origin::signed(ACCOUNT2)), None, None)); // ReactionId 1
 
-            assert_eq!(Spaces::space_by_id(SPACE1).unwrap().score, UpvotePostActionWeight::get() as i32);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1 + UpvotePostActionWeight::get() as u32);
+            assert_eq!(Storefronts::storefront_by_id(SPACE1).unwrap().score, UpvoteProductActionWeight::get() as i32);
+            assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1 + UpvoteProductActionWeight::get() as u32);
         });
     }
 
     #[test]
-    fn change_space_score_should_work_for_downvote_post() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_create_post_reaction(
+    fn change_storefront_score_should_work_for_downvote_product() {
+        ExtBuilder::build_with_product().execute_with(|| {
+            assert_ok!(_create_product_reaction(
                 Some(Origin::signed(ACCOUNT2)),
                 None,
                 Some(self::reaction_downvote())
             )); // ReactionId 1
 
-            assert_eq!(Spaces::space_by_id(SPACE1).unwrap().score, DownvotePostActionWeight::get() as i32);
+            assert_eq!(Storefronts::storefront_by_id(SPACE1).unwrap().score, DownvoteProductActionWeight::get() as i32);
             assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1);
         });
     }
@@ -2108,137 +2108,137 @@ mod tests {
 //--------------------------------------------------------------------------------------------------
 
     #[test]
-    fn change_post_score_should_work_for_create_comment() {
-        ExtBuilder::build_with_post().execute_with(|| {
+    fn change_product_score_should_work_for_create_comment() {
+        ExtBuilder::build_with_product().execute_with(|| {
             assert_ok!(_create_comment(
                 Some(Origin::signed(ACCOUNT2)),
                 None,
                 None,
                 None
-            )); // PostId 2
+            )); // ProductId 2
 
-            assert_eq!(Posts::post_by_id(POST1).unwrap().score, CreateCommentActionWeight::get() as i32);
-            assert_eq!(Spaces::space_by_id(SPACE1).unwrap().score, CreateCommentActionWeight::get() as i32);
+            assert_eq!(Products::product_by_id(POST1).unwrap().score, CreateCommentActionWeight::get() as i32);
+            assert_eq!(Storefronts::storefront_by_id(SPACE1).unwrap().score, CreateCommentActionWeight::get() as i32);
             assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1 + CreateCommentActionWeight::get() as u32);
-            assert_eq!(Scores::post_score_by_account((ACCOUNT2, POST1, self::scoring_action_create_comment())), Some(CreateCommentActionWeight::get()));
+            assert_eq!(Scores::product_score_by_account((ACCOUNT2, POST1, self::scoring_action_create_comment())), Some(CreateCommentActionWeight::get()));
         });
     }
 
     #[test]
-    fn change_post_score_should_work_for_upvote_post() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_create_post_reaction(
+    fn change_product_score_should_work_for_upvote_product() {
+        ExtBuilder::build_with_product().execute_with(|| {
+            assert_ok!(_create_product_reaction(
                 Some(Origin::signed(ACCOUNT2)),
                 None,
                 None
             ));
 
-            assert_eq!(Posts::post_by_id(POST1).unwrap().score, UpvotePostActionWeight::get() as i32);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1 + UpvotePostActionWeight::get() as u32);
-            assert_eq!(Scores::post_score_by_account((ACCOUNT2, POST1, self::scoring_action_upvote_post())), Some(UpvotePostActionWeight::get()));
+            assert_eq!(Products::product_by_id(POST1).unwrap().score, UpvoteProductActionWeight::get() as i32);
+            assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1 + UpvoteProductActionWeight::get() as u32);
+            assert_eq!(Scores::product_score_by_account((ACCOUNT2, POST1, self::scoring_action_upvote_product())), Some(UpvoteProductActionWeight::get()));
         });
     }
 
     #[test]
-    fn change_post_score_should_work_for_downvote_post() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_create_post_reaction(
+    fn change_product_score_should_work_for_downvote_product() {
+        ExtBuilder::build_with_product().execute_with(|| {
+            assert_ok!(_create_product_reaction(
                 Some(Origin::signed(ACCOUNT2)),
                 None,
                 Some(self::reaction_downvote())
             ));
 
-            assert_eq!(Posts::post_by_id(POST1).unwrap().score, DownvotePostActionWeight::get() as i32);
+            assert_eq!(Products::product_by_id(POST1).unwrap().score, DownvoteProductActionWeight::get() as i32);
             assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1);
-            assert_eq!(Scores::post_score_by_account((ACCOUNT2, POST1, self::scoring_action_downvote_post())), Some(DownvotePostActionWeight::get()));
+            assert_eq!(Scores::product_score_by_account((ACCOUNT2, POST1, self::scoring_action_downvote_product())), Some(DownvoteProductActionWeight::get()));
         });
     }
 
     #[test]
-    fn change_post_score_should_for_revert_upvote() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_create_post_reaction(
+    fn change_product_score_should_for_revert_upvote() {
+        ExtBuilder::build_with_product().execute_with(|| {
+            assert_ok!(_create_product_reaction(
                 Some(Origin::signed(ACCOUNT2)),
                 None,
                 None
             ));
             // ReactionId 1
-            assert_ok!(_delete_post_reaction(
+            assert_ok!(_delete_product_reaction(
                 Some(Origin::signed(ACCOUNT2)),
                 None,
                 REACTION1
             ));
 
-            assert_eq!(Posts::post_by_id(POST1).unwrap().score, 0);
+            assert_eq!(Products::product_by_id(POST1).unwrap().score, 0);
             assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1);
-            assert!(Scores::post_score_by_account((ACCOUNT2, POST1, self::scoring_action_upvote_post())).is_none());
+            assert!(Scores::product_score_by_account((ACCOUNT2, POST1, self::scoring_action_upvote_product())).is_none());
         });
     }
 
     #[test]
-    fn change_post_score_should_for_revert_downvote() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_create_post_reaction(
+    fn change_product_score_should_for_revert_downvote() {
+        ExtBuilder::build_with_product().execute_with(|| {
+            assert_ok!(_create_product_reaction(
                 Some(Origin::signed(ACCOUNT2)),
                 None,
                 Some(self::reaction_downvote())
             ));
             // ReactionId 1
-            assert_ok!(_delete_post_reaction(
+            assert_ok!(_delete_product_reaction(
                 Some(Origin::signed(ACCOUNT2)),
                 None,
                 REACTION1
             ));
 
-            assert_eq!(Posts::post_by_id(POST1).unwrap().score, 0);
+            assert_eq!(Products::product_by_id(POST1).unwrap().score, 0);
             assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1);
-            assert!(Scores::post_score_by_account((ACCOUNT2, POST1, self::scoring_action_downvote_post())).is_none());
+            assert!(Scores::product_score_by_account((ACCOUNT2, POST1, self::scoring_action_downvote_product())).is_none());
         });
     }
 
     #[test]
-    fn change_post_score_should_work_for_change_upvote_with_downvote() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_create_post_reaction(
+    fn change_product_score_should_work_for_change_upvote_with_downvote() {
+        ExtBuilder::build_with_product().execute_with(|| {
+            assert_ok!(_create_product_reaction(
                 Some(Origin::signed(ACCOUNT2)),
                 None,
                 None
             ));
             // ReactionId 1
-            assert_ok!(_update_post_reaction(
+            assert_ok!(_update_product_reaction(
                 Some(Origin::signed(ACCOUNT2)),
                 None,
                 REACTION1,
                 Some(self::reaction_downvote())
             ));
 
-            assert_eq!(Posts::post_by_id(POST1).unwrap().score, DownvotePostActionWeight::get() as i32);
+            assert_eq!(Products::product_by_id(POST1).unwrap().score, DownvoteProductActionWeight::get() as i32);
             assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1);
-            assert!(Scores::post_score_by_account((ACCOUNT2, POST1, self::scoring_action_upvote_post())).is_none());
-            assert_eq!(Scores::post_score_by_account((ACCOUNT2, POST1, self::scoring_action_downvote_post())), Some(DownvotePostActionWeight::get()));
+            assert!(Scores::product_score_by_account((ACCOUNT2, POST1, self::scoring_action_upvote_product())).is_none());
+            assert_eq!(Scores::product_score_by_account((ACCOUNT2, POST1, self::scoring_action_downvote_product())), Some(DownvoteProductActionWeight::get()));
         });
     }
 
     #[test]
-    fn change_post_score_should_work_for_change_downvote_with_upvote() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_create_post_reaction(
+    fn change_product_score_should_work_for_change_downvote_with_upvote() {
+        ExtBuilder::build_with_product().execute_with(|| {
+            assert_ok!(_create_product_reaction(
                 Some(Origin::signed(ACCOUNT2)),
                 None,
                 Some(self::reaction_downvote())
             ));
             // ReactionId 1
-            assert_ok!(_update_post_reaction(
+            assert_ok!(_update_product_reaction(
                 Some(Origin::signed(ACCOUNT2)),
                 None,
                 REACTION1,
                 None
             ));
 
-            assert_eq!(Posts::post_by_id(POST1).unwrap().score, UpvotePostActionWeight::get() as i32);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1 + UpvotePostActionWeight::get() as u32);
-            assert!(Scores::post_score_by_account((ACCOUNT2, POST1, self::scoring_action_downvote_post())).is_none());
-            assert_eq!(Scores::post_score_by_account((ACCOUNT2, POST1, self::scoring_action_upvote_post())), Some(UpvotePostActionWeight::get()));
+            assert_eq!(Products::product_by_id(POST1).unwrap().score, UpvoteProductActionWeight::get() as i32);
+            assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1 + UpvoteProductActionWeight::get() as u32);
+            assert!(Scores::product_score_by_account((ACCOUNT2, POST1, self::scoring_action_downvote_product())).is_none());
+            assert_eq!(Scores::product_score_by_account((ACCOUNT2, POST1, self::scoring_action_upvote_product())), Some(UpvoteProductActionWeight::get()));
         });
     }
 
@@ -2246,8 +2246,8 @@ mod tests {
 
     #[test]
     fn change_social_account_reputation_should_work_with_max_score_diff() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_create_post(Some(Origin::signed(ACCOUNT1)), None, None, None));
+        ExtBuilder::build_with_storefront().execute_with(|| {
+            assert_ok!(_create_product(Some(Origin::signed(ACCOUNT1)), None, None, None));
             assert_ok!(Scores::change_social_account_reputation(
                 ACCOUNT1,
                 ACCOUNT2,
@@ -2259,8 +2259,8 @@ mod tests {
 
     #[test]
     fn change_social_account_reputation_should_work_with_min_score_diff() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_create_post(Some(Origin::signed(ACCOUNT1)), None, None, None));
+        ExtBuilder::build_with_storefront().execute_with(|| {
+            assert_ok!(_create_product(Some(Origin::signed(ACCOUNT1)), None, None, None));
             assert_ok!(Scores::change_social_account_reputation(
                 ACCOUNT1,
                 ACCOUNT2,
@@ -2272,23 +2272,23 @@ mod tests {
 
     #[test]
     fn change_social_account_reputation_should_work() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_create_post(Some(Origin::signed(ACCOUNT1)), None, None, None));
+        ExtBuilder::build_with_storefront().execute_with(|| {
+            assert_ok!(_create_product(Some(Origin::signed(ACCOUNT1)), None, None, None));
             assert_ok!(Scores::change_social_account_reputation(
                 ACCOUNT1,
                 ACCOUNT2,
-                DownvotePostActionWeight::get(),
-                self::scoring_action_downvote_post())
+                DownvoteProductActionWeight::get(),
+                self::scoring_action_downvote_product())
             );
-            assert_eq!(Scores::account_reputation_diff_by_account((ACCOUNT2, ACCOUNT1, self::scoring_action_downvote_post())), Some(0));
+            assert_eq!(Scores::account_reputation_diff_by_account((ACCOUNT2, ACCOUNT1, self::scoring_action_downvote_product())), Some(0));
             assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1);
 
-            // To ensure function works correctly, multiply default UpvotePostActionWeight by two
+            // To ensure function works correctly, multiply default UpvoteProductActionWeight by two
             assert_ok!(Scores::change_social_account_reputation(
                 ACCOUNT1,
                 ACCOUNT2,
-                UpvotePostActionWeight::get() * 2,
-                self::scoring_action_upvote_post())
+                UpvoteProductActionWeight::get() * 2,
+                self::scoring_action_upvote_product())
             );
 
             assert_eq!(
@@ -2296,12 +2296,12 @@ mod tests {
                     (
                         ACCOUNT2,
                         ACCOUNT1,
-                        self::scoring_action_upvote_post()
+                        self::scoring_action_upvote_product()
                     )
-                ), Some(UpvotePostActionWeight::get() * 2)
+                ), Some(UpvoteProductActionWeight::get() * 2)
             );
 
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1 + (UpvotePostActionWeight::get() * 2) as u32);
+            assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1 + (UpvoteProductActionWeight::get() * 2) as u32);
         });
     }
 
@@ -2309,396 +2309,396 @@ mod tests {
 
     #[test]
     fn change_comment_score_should_work_for_upvote() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_create_post(
+        ExtBuilder::build_with_storefront().execute_with(|| {
+            assert_ok!(_create_product(
                 Some(Origin::signed(ACCOUNT1)),
                 None,
                 None,
                 None
             ));
-            // PostId 1
+            // ProductId 1
             assert_ok!(_create_comment(
                 Some(Origin::signed(ACCOUNT2)),
                 None,
                 None,
                 None
-            )); // PostId 2
+            )); // ProductId 2
 
-            assert_ok!(_score_post_on_reaction_with_id(
+            assert_ok!(_score_product_on_reaction_with_id(
                 ACCOUNT3,
                 POST2,
                 self::reaction_upvote()
             ));
 
-            assert_eq!(Posts::post_by_id(POST2).unwrap().score, UpvoteCommentActionWeight::get() as i32);
+            assert_eq!(Products::product_by_id(POST2).unwrap().score, UpvoteCommentActionWeight::get() as i32);
             assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1 + CreateCommentActionWeight::get() as u32);
             assert_eq!(Profiles::social_account_by_id(ACCOUNT2).unwrap().reputation, 1 + UpvoteCommentActionWeight::get() as u32);
             assert_eq!(Profiles::social_account_by_id(ACCOUNT3).unwrap().reputation, 1);
-            assert_eq!(Scores::post_score_by_account((ACCOUNT3, POST2, self::scoring_action_upvote_comment())), Some(UpvoteCommentActionWeight::get()));
+            assert_eq!(Scores::product_score_by_account((ACCOUNT3, POST2, self::scoring_action_upvote_comment())), Some(UpvoteCommentActionWeight::get()));
         });
     }
 
     #[test]
     fn change_comment_score_should_work_for_downvote() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_create_post(
+        ExtBuilder::build_with_storefront().execute_with(|| {
+            assert_ok!(_create_product(
                 Some(Origin::signed(ACCOUNT1)),
                 None,
                 None,
                 None
             ));
-            // PostId 1
+            // ProductId 1
             assert_ok!(_create_comment(
                 Some(Origin::signed(ACCOUNT2)),
                 None,
                 None,
                 None
-            )); // PostId 2
+            )); // ProductId 2
 
-            assert_ok!(_score_post_on_reaction_with_id(ACCOUNT3, POST2, self::reaction_downvote()));
+            assert_ok!(_score_product_on_reaction_with_id(ACCOUNT3, POST2, self::reaction_downvote()));
 
-            assert_eq!(Posts::post_by_id(POST2).unwrap().score, DownvoteCommentActionWeight::get() as i32);
+            assert_eq!(Products::product_by_id(POST2).unwrap().score, DownvoteCommentActionWeight::get() as i32);
             assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1 + CreateCommentActionWeight::get() as u32);
             assert_eq!(Profiles::social_account_by_id(ACCOUNT2).unwrap().reputation, 1);
             assert_eq!(Profiles::social_account_by_id(ACCOUNT3).unwrap().reputation, 1);
-            assert_eq!(Scores::post_score_by_account((ACCOUNT3, POST2, self::scoring_action_downvote_comment())), Some(DownvoteCommentActionWeight::get()));
+            assert_eq!(Scores::product_score_by_account((ACCOUNT3, POST2, self::scoring_action_downvote_comment())), Some(DownvoteCommentActionWeight::get()));
         });
     }
 
     #[test]
     fn change_comment_score_should_for_revert_upvote() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_create_post(
+        ExtBuilder::build_with_storefront().execute_with(|| {
+            assert_ok!(_create_product(
                 Some(Origin::signed(ACCOUNT1)),
                 None,
                 None,
                 None
             ));
-            // PostId 1
+            // ProductId 1
             assert_ok!(_create_comment(
                 Some(Origin::signed(ACCOUNT2)),
                 None,
                 None,
                 None
-            )); // PostId 2
+            )); // ProductId 2
 
-            assert_ok!(_score_post_on_reaction_with_id(ACCOUNT3, POST2, self::reaction_upvote()));
-            assert_ok!(_score_post_on_reaction_with_id(ACCOUNT3, POST2, self::reaction_upvote()));
+            assert_ok!(_score_product_on_reaction_with_id(ACCOUNT3, POST2, self::reaction_upvote()));
+            assert_ok!(_score_product_on_reaction_with_id(ACCOUNT3, POST2, self::reaction_upvote()));
 
-            assert_eq!(Posts::post_by_id(POST2).unwrap().score, 0);
+            assert_eq!(Products::product_by_id(POST2).unwrap().score, 0);
             assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1 + CreateCommentActionWeight::get() as u32);
             assert_eq!(Profiles::social_account_by_id(ACCOUNT2).unwrap().reputation, 1);
             assert_eq!(Profiles::social_account_by_id(ACCOUNT3).unwrap().reputation, 1);
-            assert!(Scores::post_score_by_account((ACCOUNT1, POST2, self::scoring_action_upvote_comment())).is_none());
+            assert!(Scores::product_score_by_account((ACCOUNT1, POST2, self::scoring_action_upvote_comment())).is_none());
         });
     }
 
     #[test]
     fn change_comment_score_should_for_revert_downvote() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_create_post(
+        ExtBuilder::build_with_storefront().execute_with(|| {
+            assert_ok!(_create_product(
                 Some(Origin::signed(ACCOUNT1)),
                 None,
                 None,
                 None
             ));
-            // PostId 1
+            // ProductId 1
             assert_ok!(_create_comment(
                 Some(Origin::signed(ACCOUNT2)),
                 None,
                 None,
                 None
-            )); // PostId 2
+            )); // ProductId 2
 
-            assert_ok!(_score_post_on_reaction_with_id(ACCOUNT3, POST2, self::reaction_downvote()));
-            assert_ok!(_score_post_on_reaction_with_id(ACCOUNT3, POST2, self::reaction_downvote()));
+            assert_ok!(_score_product_on_reaction_with_id(ACCOUNT3, POST2, self::reaction_downvote()));
+            assert_ok!(_score_product_on_reaction_with_id(ACCOUNT3, POST2, self::reaction_downvote()));
 
-            assert_eq!(Posts::post_by_id(POST2).unwrap().score, 0);
+            assert_eq!(Products::product_by_id(POST2).unwrap().score, 0);
             assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1 + CreateCommentActionWeight::get() as u32);
             assert_eq!(Profiles::social_account_by_id(ACCOUNT2).unwrap().reputation, 1);
             assert_eq!(Profiles::social_account_by_id(ACCOUNT3).unwrap().reputation, 1);
-            assert!(Scores::post_score_by_account((ACCOUNT1, POST2, self::scoring_action_downvote_comment())).is_none());
+            assert!(Scores::product_score_by_account((ACCOUNT1, POST2, self::scoring_action_downvote_comment())).is_none());
         });
     }
 
     #[test]
     fn change_comment_score_check_for_cancel_upvote() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_create_post(
+        ExtBuilder::build_with_storefront().execute_with(|| {
+            assert_ok!(_create_product(
                 Some(Origin::signed(ACCOUNT1)),
                 None,
                 None,
                 None
             ));
-            // PostId 1
+            // ProductId 1
             assert_ok!(_create_comment(
                 Some(Origin::signed(ACCOUNT2)),
                 None,
                 None,
                 None
-            )); // PostId 2
+            )); // ProductId 2
 
-            assert_ok!(_score_post_on_reaction_with_id(ACCOUNT3, POST2, self::reaction_upvote()));
-            assert_ok!(_score_post_on_reaction_with_id(ACCOUNT3, POST2, self::reaction_downvote()));
+            assert_ok!(_score_product_on_reaction_with_id(ACCOUNT3, POST2, self::reaction_upvote()));
+            assert_ok!(_score_product_on_reaction_with_id(ACCOUNT3, POST2, self::reaction_downvote()));
 
-            assert_eq!(Posts::post_by_id(POST2).unwrap().score, DownvoteCommentActionWeight::get() as i32);
+            assert_eq!(Products::product_by_id(POST2).unwrap().score, DownvoteCommentActionWeight::get() as i32);
             assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1 + CreateCommentActionWeight::get() as u32);
             assert_eq!(Profiles::social_account_by_id(ACCOUNT2).unwrap().reputation, 1);
             assert_eq!(Profiles::social_account_by_id(ACCOUNT3).unwrap().reputation, 1);
-            assert!(Scores::post_score_by_account((ACCOUNT3, POST2, self::scoring_action_upvote_comment())).is_none());
-            assert_eq!(Scores::post_score_by_account((ACCOUNT3, POST2, self::scoring_action_downvote_comment())), Some(DownvoteCommentActionWeight::get()));
+            assert!(Scores::product_score_by_account((ACCOUNT3, POST2, self::scoring_action_upvote_comment())).is_none());
+            assert_eq!(Scores::product_score_by_account((ACCOUNT3, POST2, self::scoring_action_downvote_comment())), Some(DownvoteCommentActionWeight::get()));
         });
     }
 
     #[test]
     fn change_comment_score_check_for_cancel_downvote() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_create_post(
+        ExtBuilder::build_with_storefront().execute_with(|| {
+            assert_ok!(_create_product(
                 Some(Origin::signed(ACCOUNT1)),
                 None,
                 None,
                 None
             ));
-            // PostId 1
+            // ProductId 1
             assert_ok!(_create_comment(
                 Some(Origin::signed(ACCOUNT2)),
                 None,
                 None,
                 None
-            )); // PostId 2
+            )); // ProductId 2
 
-            assert_ok!(_score_post_on_reaction_with_id(ACCOUNT3, POST2, self::reaction_downvote()));
-            assert_ok!(_score_post_on_reaction_with_id(ACCOUNT3, POST2, self::reaction_upvote()));
+            assert_ok!(_score_product_on_reaction_with_id(ACCOUNT3, POST2, self::reaction_downvote()));
+            assert_ok!(_score_product_on_reaction_with_id(ACCOUNT3, POST2, self::reaction_upvote()));
 
-            assert_eq!(Posts::post_by_id(POST2).unwrap().score, UpvoteCommentActionWeight::get() as i32);
+            assert_eq!(Products::product_by_id(POST2).unwrap().score, UpvoteCommentActionWeight::get() as i32);
             assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1 + CreateCommentActionWeight::get() as u32);
             assert_eq!(Profiles::social_account_by_id(ACCOUNT2).unwrap().reputation, 1 + UpvoteCommentActionWeight::get() as u32);
             assert_eq!(Profiles::social_account_by_id(ACCOUNT3).unwrap().reputation, 1);
-            assert!(Scores::post_score_by_account((ACCOUNT3, POST2, self::scoring_action_downvote_comment())).is_none());
-            assert_eq!(Scores::post_score_by_account((ACCOUNT3, POST2, self::scoring_action_upvote_comment())), Some(UpvoteCommentActionWeight::get()));
+            assert!(Scores::product_score_by_account((ACCOUNT3, POST2, self::scoring_action_downvote_comment())).is_none());
+            assert_eq!(Scores::product_score_by_account((ACCOUNT3, POST2, self::scoring_action_upvote_comment())), Some(UpvoteCommentActionWeight::get()));
         });
     }
 
 // Shares tests
 
     #[test]
-    fn share_post_should_work() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_create_space(
+    fn share_product_should_work() {
+        ExtBuilder::build_with_product().execute_with(|| {
+            assert_ok!(_create_storefront(
                 Some(Origin::signed(ACCOUNT2)),
                 None,
-                Some(Some(b"space2_handle".to_vec())),
+                Some(Some(b"storefront2_handle".to_vec())),
                 None
-            )); // SpaceId 2 by ACCOUNT2
+            )); // StorefrontId 2 by ACCOUNT2
 
-            assert_ok!(_create_post(
+            assert_ok!(_create_product(
                 Some(Origin::signed(ACCOUNT2)),
                 Some(Some(SPACE2)),
-                Some(self::extension_shared_post(POST1)),
+                Some(self::extension_shared_product(POST1)),
                 None
-            )); // Share PostId 1 on SpaceId 2 by ACCOUNT2 which is permitted by default in both spaces
+            )); // Share ProductId 1 on StorefrontId 2 by ACCOUNT2 which is permitted by default in both storefronts
 
             // Check storages
-            assert_eq!(Posts::post_ids_by_space_id(SPACE1), vec![POST1]);
-            assert_eq!(Posts::post_ids_by_space_id(SPACE2), vec![POST2]);
-            assert_eq!(Posts::next_post_id(), POST3);
+            assert_eq!(Products::product_ids_by_storefront_id(SPACE1), vec![POST1]);
+            assert_eq!(Products::product_ids_by_storefront_id(SPACE2), vec![POST2]);
+            assert_eq!(Products::next_product_id(), POST3);
 
-            assert_eq!(Posts::shared_post_ids_by_original_post_id(POST1), vec![POST2]);
+            assert_eq!(Products::shared_product_ids_by_original_product_id(POST1), vec![POST2]);
 
             // Check whether data stored correctly
-            assert_eq!(Posts::post_by_id(POST1).unwrap().shares_count, 1);
+            assert_eq!(Products::product_by_id(POST1).unwrap().shares_count, 1);
 
-            let shared_post = Posts::post_by_id(POST2).unwrap();
+            let shared_product = Products::product_by_id(POST2).unwrap();
 
-            assert_eq!(shared_post.space_id, Some(SPACE2));
-            assert_eq!(shared_post.created.account, ACCOUNT2);
-            assert_eq!(shared_post.extension, self::extension_shared_post(POST1));
+            assert_eq!(shared_product.storefront_id, Some(SPACE2));
+            assert_eq!(shared_product.created.account, ACCOUNT2);
+            assert_eq!(shared_product.extension, self::extension_shared_product(POST1));
         });
     }
 
     #[test]
-    fn share_post_should_work_with_a_few_roles() {
-        ExtBuilder::build_with_a_few_roles_granted_to_account2(vec![SP::CreatePosts]).execute_with(|| {
-            assert_ok!(_create_space(
+    fn share_product_should_work_with_a_few_roles() {
+        ExtBuilder::build_with_a_few_roles_granted_to_account2(vec![SP::CreateProducts]).execute_with(|| {
+            assert_ok!(_create_storefront(
                 None, // From ACCOUNT1
                 None, // With no parent_id provided
                 Some(None), // Provided without any handle
-                None // With default space content,
+                None // With default storefront content,
             ));
-            // SpaceId 2
-            assert_ok!(_create_post(
+            // StorefrontId 2
+            assert_ok!(_create_product(
                 None, // From ACCOUNT1
                 Some(Some(SPACE2)),
-                None, // With RegularPost extension
-                None // With default post content
-            )); // PostId 1 on SpaceId 2
+                None, // With RegularProduct extension
+                None // With default product content
+            )); // ProductId 1 on StorefrontId 2
 
-            assert_ok!(_create_post(
+            assert_ok!(_create_product(
                 Some(Origin::signed(ACCOUNT2)),
                 Some(Some(SPACE1)),
-                Some(self::extension_shared_post(POST1)),
+                Some(self::extension_shared_product(POST1)),
                 None
-            )); // Share PostId 1 on SpaceId 1 by ACCOUNT2 which is permitted by RoleId 1 from ext
+            )); // Share ProductId 1 on StorefrontId 1 by ACCOUNT2 which is permitted by RoleId 1 from ext
         });
     }
 
     #[test]
-    fn share_post_should_work_for_share_own_post_in_same_own_space() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_create_post(
+    fn share_product_should_work_for_share_own_product_in_same_own_storefront() {
+        ExtBuilder::build_with_product().execute_with(|| {
+            assert_ok!(_create_product(
                 Some(Origin::signed(ACCOUNT1)),
                 Some(Some(SPACE1)),
-                Some(self::extension_shared_post(POST1)),
+                Some(self::extension_shared_product(POST1)),
                 None
-            )); // Share PostId 1
+            )); // Share ProductId 1
 
             // Check storages
-            assert_eq!(Posts::post_ids_by_space_id(SPACE1), vec![POST1, POST2]);
-            assert_eq!(Posts::next_post_id(), POST3);
+            assert_eq!(Products::product_ids_by_storefront_id(SPACE1), vec![POST1, POST2]);
+            assert_eq!(Products::next_product_id(), POST3);
 
-            assert_eq!(Posts::shared_post_ids_by_original_post_id(POST1), vec![POST2]);
+            assert_eq!(Products::shared_product_ids_by_original_product_id(POST1), vec![POST2]);
 
             // Check whether data stored correctly
-            assert_eq!(Posts::post_by_id(POST1).unwrap().shares_count, 1);
+            assert_eq!(Products::product_by_id(POST1).unwrap().shares_count, 1);
 
-            let shared_post = Posts::post_by_id(POST2).unwrap();
-            assert_eq!(shared_post.space_id, Some(SPACE1));
-            assert_eq!(shared_post.created.account, ACCOUNT1);
-            assert_eq!(shared_post.extension, self::extension_shared_post(POST1));
+            let shared_product = Products::product_by_id(POST2).unwrap();
+            assert_eq!(shared_product.storefront_id, Some(SPACE1));
+            assert_eq!(shared_product.created.account, ACCOUNT1);
+            assert_eq!(shared_product.extension, self::extension_shared_product(POST1));
         });
     }
 
     #[test]
-    fn share_post_should_change_score() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_create_space(
+    fn share_product_should_change_score() {
+        ExtBuilder::build_with_product().execute_with(|| {
+            assert_ok!(_create_storefront(
                 Some(Origin::signed(ACCOUNT2)),
                 None,
-                Some(Some(b"space2_handle".to_vec())),
+                Some(Some(b"storefront2_handle".to_vec())),
                 None
-            )); // SpaceId 2 by ACCOUNT2
+            )); // StorefrontId 2 by ACCOUNT2
 
-            assert_ok!(_create_post(
+            assert_ok!(_create_product(
                 Some(Origin::signed(ACCOUNT2)),
                 Some(Some(SPACE2)),
-                Some(self::extension_shared_post(POST1)),
+                Some(self::extension_shared_product(POST1)),
                 None
-            )); // Share PostId 1 on SpaceId 2 by ACCOUNT2
+            )); // Share ProductId 1 on StorefrontId 2 by ACCOUNT2
 
-            assert_eq!(Posts::post_by_id(POST1).unwrap().score, SharePostActionWeight::get() as i32);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1 + SharePostActionWeight::get() as u32);
-            assert_eq!(Scores::post_score_by_account((ACCOUNT2, POST1, self::scoring_action_share_post())), Some(SharePostActionWeight::get()));
+            assert_eq!(Products::product_by_id(POST1).unwrap().score, ShareProductActionWeight::get() as i32);
+            assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1 + ShareProductActionWeight::get() as u32);
+            assert_eq!(Scores::product_score_by_account((ACCOUNT2, POST1, self::scoring_action_share_product())), Some(ShareProductActionWeight::get()));
         });
     }
 
     #[test]
-    fn share_post_should_not_change_score() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_create_post(
+    fn share_product_should_not_change_score() {
+        ExtBuilder::build_with_product().execute_with(|| {
+            assert_ok!(_create_product(
                 Some(Origin::signed(ACCOUNT1)),
                 Some(Some(SPACE1)),
-                Some(self::extension_shared_post(POST1)),
+                Some(self::extension_shared_product(POST1)),
                 None
-            )); // Share PostId
+            )); // Share ProductId
 
-            assert_eq!(Posts::post_by_id(POST1).unwrap().score, 0);
+            assert_eq!(Products::product_by_id(POST1).unwrap().score, 0);
             assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1);
-            assert!(Scores::post_score_by_account((ACCOUNT1, POST1, self::scoring_action_share_post())).is_none());
+            assert!(Scores::product_score_by_account((ACCOUNT1, POST1, self::scoring_action_share_product())).is_none());
         });
     }
 
     #[test]
-    fn share_post_should_fail_with_original_post_not_found() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_create_space(
+    fn share_product_should_fail_with_original_product_not_found() {
+        ExtBuilder::build_with_storefront().execute_with(|| {
+            assert_ok!(_create_storefront(
                 Some(Origin::signed(ACCOUNT2)),
                 None,
-                Some(Some(b"space2_handle".to_vec())),
+                Some(Some(b"storefront2_handle".to_vec())),
                 None
-            )); // SpaceId 2 by ACCOUNT2
+            )); // StorefrontId 2 by ACCOUNT2
 
-            // Skipped creating PostId 1
-            assert_noop!(_create_post(
+            // Skipped creating ProductId 1
+            assert_noop!(_create_product(
                 Some(Origin::signed(ACCOUNT2)),
                 Some(Some(SPACE2)),
-                Some(self::extension_shared_post(POST1)),
+                Some(self::extension_shared_product(POST1)),
                 None
-            ), PostsError::<TestRuntime>::OriginalPostNotFound);
+            ), ProductsError::<TestRuntime>::OriginalProductNotFound);
         });
     }
 
     #[test]
-    fn share_post_should_fail_with_cannot_share_sharing_post() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_create_space(
+    fn share_product_should_fail_with_cannot_share_sharing_product() {
+        ExtBuilder::build_with_product().execute_with(|| {
+            assert_ok!(_create_storefront(
                 Some(Origin::signed(ACCOUNT2)),
                 None,
-                Some(Some(b"space2_handle".to_vec())),
+                Some(Some(b"storefront2_handle".to_vec())),
                 None
-            )); // SpaceId 2 by ACCOUNT2
+            )); // StorefrontId 2 by ACCOUNT2
 
-            assert_ok!(_create_post(
+            assert_ok!(_create_product(
                 Some(Origin::signed(ACCOUNT2)),
                 Some(Some(SPACE2)),
-                Some(self::extension_shared_post(POST1)),
+                Some(self::extension_shared_product(POST1)),
                 None)
             );
 
-            // Try to share post with extension SharedPost
-            assert_noop!(_create_post(
+            // Try to share product with extension SharedProduct
+            assert_noop!(_create_product(
                 Some(Origin::signed(ACCOUNT1)),
                 Some(Some(SPACE1)),
-                Some(self::extension_shared_post(POST2)),
+                Some(self::extension_shared_product(POST2)),
                 None
-            ), PostsError::<TestRuntime>::CannotShareSharingPost);
+            ), ProductsError::<TestRuntime>::CannotShareSharingProduct);
         });
     }
 
     #[test]
-    fn share_post_should_fail_with_no_permission_to_create_posts() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_create_space(
+    fn share_product_should_fail_with_no_permission_to_create_products() {
+        ExtBuilder::build_with_product().execute_with(|| {
+            assert_ok!(_create_storefront(
                 Some(Origin::signed(ACCOUNT1)),
                 None, // With no parent_id provided
-                Some(None), // No space_handle provided (ok)
-                None // Default space content,
-            )); // SpaceId 2 by ACCOUNT1
+                Some(None), // No storefront_handle provided (ok)
+                None // Default storefront content,
+            )); // StorefrontId 2 by ACCOUNT1
 
-            // Try to share post with extension SharedPost
-            assert_noop!(_create_post(
+            // Try to share product with extension SharedProduct
+            assert_noop!(_create_product(
                 Some(Origin::signed(ACCOUNT2)),
                 Some(Some(SPACE2)),
-                Some(self::extension_shared_post(POST1)),
+                Some(self::extension_shared_product(POST1)),
                 None
-            ), PostsError::<TestRuntime>::NoPermissionToCreatePosts);
+            ), ProductsError::<TestRuntime>::NoPermissionToCreateProducts);
         });
     }
 
     #[test]
-    fn share_post_should_fail_with_a_few_roles_no_permission() {
-        ExtBuilder::build_with_a_few_roles_granted_to_account2(vec![SP::CreatePosts]).execute_with(|| {
-            assert_ok!(_create_space(
+    fn share_product_should_fail_with_a_few_roles_no_permission() {
+        ExtBuilder::build_with_a_few_roles_granted_to_account2(vec![SP::CreateProducts]).execute_with(|| {
+            assert_ok!(_create_storefront(
                 None, // From ACCOUNT1
                 None, // With no parent_id provided
                 Some(None), // Provided without any handle
-                None // With default space content
+                None // With default storefront content
             ));
-            // SpaceId 2
-            assert_ok!(_create_post(
+            // StorefrontId 2
+            assert_ok!(_create_product(
                 None, // From ACCOUNT1
                 Some(Some(SPACE2)),
-                None, // With RegularPost extension
-                None // With default post content
-            )); // PostId 1 on SpaceId 2
+                None, // With RegularProduct extension
+                None // With default product content
+            )); // ProductId 1 on StorefrontId 2
 
             assert_ok!(_delete_default_role());
 
-            assert_noop!(_create_post(
+            assert_noop!(_create_product(
                 Some(Origin::signed(ACCOUNT2)),
                 Some(Some(SPACE1)),
-                Some(self::extension_shared_post(POST1)),
+                Some(self::extension_shared_product(POST1)),
                 None
-            ), PostsError::<TestRuntime>::NoPermissionToCreatePosts);
+            ), ProductsError::<TestRuntime>::NoPermissionToCreateProducts);
         });
     }
 
@@ -2746,13 +2746,13 @@ mod tests {
             // AccountId 1
             assert_ok!(_update_profile(
                 None,
-                Some(self::space_content_ipfs())
+                Some(self::storefront_content_ipfs())
             ));
 
             // Check whether profile updated correctly
             let profile = Profiles::social_account_by_id(ACCOUNT1).unwrap().profile.unwrap();
             assert!(profile.updated.is_some());
-            assert_eq!(profile.content, self::space_content_ipfs());
+            assert_eq!(profile.content, self::storefront_content_ipfs());
 
             // Check whether profile history is written correctly
             let profile_history = ProfileHistory::edit_history(ACCOUNT1)[0].clone();
@@ -2806,73 +2806,73 @@ mod tests {
         });
     }
 
-// Space following tests
+// Storefront following tests
 
     #[test]
-    fn follow_space_should_work() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_default_follow_space()); // Follow SpaceId 1 by ACCOUNT2
+    fn follow_storefront_should_work() {
+        ExtBuilder::build_with_storefront().execute_with(|| {
+            assert_ok!(_default_follow_storefront()); // Follow StorefrontId 1 by ACCOUNT2
 
-            assert_eq!(Spaces::space_by_id(SPACE1).unwrap().followers_count, 2);
-            assert_eq!(SpaceFollows::spaces_followed_by_account(ACCOUNT2), vec![SPACE1]);
-            assert_eq!(SpaceFollows::space_followers(SPACE1), vec![ACCOUNT1, ACCOUNT2]);
-            assert_eq!(SpaceFollows::space_followed_by_account((ACCOUNT2, SPACE1)), true);
+            assert_eq!(Storefronts::storefront_by_id(SPACE1).unwrap().followers_count, 2);
+            assert_eq!(StorefrontFollows::storefronts_followed_by_account(ACCOUNT2), vec![SPACE1]);
+            assert_eq!(StorefrontFollows::storefront_followers(SPACE1), vec![ACCOUNT1, ACCOUNT2]);
+            assert_eq!(StorefrontFollows::storefront_followed_by_account((ACCOUNT2, SPACE1)), true);
         });
     }
 
     #[test]
-    fn follow_space_should_fail_with_space_not_found() {
+    fn follow_storefront_should_fail_with_storefront_not_found() {
         ExtBuilder::build().execute_with(|| {
-            assert_noop!(_default_follow_space(), SpacesError::<TestRuntime>::SpaceNotFound);
+            assert_noop!(_default_follow_storefront(), StorefrontsError::<TestRuntime>::StorefrontNotFound);
         });
     }
 
     #[test]
-    fn follow_space_should_fail_with_already_space_follower() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_default_follow_space()); // Follow SpaceId 1 by ACCOUNT2
+    fn follow_storefront_should_fail_with_already_storefront_follower() {
+        ExtBuilder::build_with_storefront().execute_with(|| {
+            assert_ok!(_default_follow_storefront()); // Follow StorefrontId 1 by ACCOUNT2
 
-            assert_noop!(_default_follow_space(), SpaceFollowsError::<TestRuntime>::AlreadySpaceFollower);
+            assert_noop!(_default_follow_storefront(), StorefrontFollowsError::<TestRuntime>::AlreadyStorefrontFollower);
         });
     }
 
     #[test]
-    fn follow_space_should_fail_with_cannot_follow_hidden_space() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_update_space(
+    fn follow_storefront_should_fail_with_cannot_follow_hidden_storefront() {
+        ExtBuilder::build_with_storefront().execute_with(|| {
+            assert_ok!(_update_storefront(
                 None,
                 None,
-                Some(self::space_update(None, None, None, Some(true), None))
+                Some(self::storefront_update(None, None, None, Some(true), None))
             ));
 
-            assert_noop!(_default_follow_space(), SpaceFollowsError::<TestRuntime>::CannotFollowHiddenSpace);
+            assert_noop!(_default_follow_storefront(), StorefrontFollowsError::<TestRuntime>::CannotFollowHiddenStorefront);
         });
     }
 
     #[test]
-    fn unfollow_space_should_work() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_default_follow_space());
-            // Follow SpaceId 1 by ACCOUNT2
-            assert_ok!(_default_unfollow_space());
+    fn unfollow_storefront_should_work() {
+        ExtBuilder::build_with_storefront().execute_with(|| {
+            assert_ok!(_default_follow_storefront());
+            // Follow StorefrontId 1 by ACCOUNT2
+            assert_ok!(_default_unfollow_storefront());
 
-            assert_eq!(Spaces::space_by_id(SPACE1).unwrap().followers_count, 1);
-            assert!(SpaceFollows::spaces_followed_by_account(ACCOUNT2).is_empty());
-            assert_eq!(SpaceFollows::space_followers(SPACE1), vec![ACCOUNT1]);
+            assert_eq!(Storefronts::storefront_by_id(SPACE1).unwrap().followers_count, 1);
+            assert!(StorefrontFollows::storefronts_followed_by_account(ACCOUNT2).is_empty());
+            assert_eq!(StorefrontFollows::storefront_followers(SPACE1), vec![ACCOUNT1]);
         });
     }
 
     #[test]
-    fn unfollow_space_should_fail_with_space_not_found() {
-        ExtBuilder::build_with_space_follow_no_space().execute_with(|| {
-            assert_noop!(_default_unfollow_space(), SpacesError::<TestRuntime>::SpaceNotFound);
+    fn unfollow_storefront_should_fail_with_storefront_not_found() {
+        ExtBuilder::build_with_storefront_follow_no_storefront().execute_with(|| {
+            assert_noop!(_default_unfollow_storefront(), StorefrontsError::<TestRuntime>::StorefrontNotFound);
         });
     }
 
     #[test]
-    fn unfollow_space_should_fail_with_not_space_follower() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_noop!(_default_unfollow_space(), SpaceFollowsError::<TestRuntime>::NotSpaceFollower);
+    fn unfollow_storefront_should_fail_with_not_storefront_follower() {
+        ExtBuilder::build_with_storefront().execute_with(|| {
+            assert_noop!(_default_unfollow_storefront(), StorefrontFollowsError::<TestRuntime>::NotStorefrontFollower);
         });
     }
 
@@ -2944,151 +2944,151 @@ mod tests {
 // Transfer ownership tests
 
     #[test]
-    fn transfer_space_ownership_should_work() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_transfer_default_space_ownership()); // Transfer SpaceId 1 owned by ACCOUNT1 to ACCOUNT2
+    fn transfer_storefront_ownership_should_work() {
+        ExtBuilder::build_with_storefront().execute_with(|| {
+            assert_ok!(_transfer_default_storefront_ownership()); // Transfer StorefrontId 1 owned by ACCOUNT1 to ACCOUNT2
 
-            assert_eq!(SpaceOwnership::pending_space_owner(SPACE1).unwrap(), ACCOUNT2);
+            assert_eq!(StorefrontOwnership::pending_storefront_owner(SPACE1).unwrap(), ACCOUNT2);
         });
     }
 
     #[test]
-    fn transfer_space_ownership_should_fail_with_space_not_found() {
+    fn transfer_storefront_ownership_should_fail_with_storefront_not_found() {
         ExtBuilder::build().execute_with(|| {
-            assert_noop!(_transfer_default_space_ownership(), SpacesError::<TestRuntime>::SpaceNotFound);
+            assert_noop!(_transfer_default_storefront_ownership(), StorefrontsError::<TestRuntime>::StorefrontNotFound);
         });
     }
 
     #[test]
-    fn transfer_space_ownership_should_fail_with_not_a_space_owner() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_noop!(_transfer_space_ownership(
+    fn transfer_storefront_ownership_should_fail_with_not_a_storefront_owner() {
+        ExtBuilder::build_with_storefront().execute_with(|| {
+            assert_noop!(_transfer_storefront_ownership(
                 Some(Origin::signed(ACCOUNT2)),
                 None,
                 Some(ACCOUNT1)
-            ), SpacesError::<TestRuntime>::NotASpaceOwner);
+            ), StorefrontsError::<TestRuntime>::NotAStorefrontOwner);
         });
     }
 
     #[test]
-    fn transfer_space_ownership_should_fail_with_cannot_transfer_to_current_owner() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_noop!(_transfer_space_ownership(
+    fn transfer_storefront_ownership_should_fail_with_cannot_transfer_to_current_owner() {
+        ExtBuilder::build_with_storefront().execute_with(|| {
+            assert_noop!(_transfer_storefront_ownership(
                 Some(Origin::signed(ACCOUNT1)),
                 None,
                 Some(ACCOUNT1)
-            ), SpaceOwnershipError::<TestRuntime>::CannotTranferToCurrentOwner);
+            ), StorefrontOwnershipError::<TestRuntime>::CannotTranferToCurrentOwner);
         });
     }
 
     #[test]
     fn accept_pending_ownership_should_work() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_transfer_default_space_ownership());
-            // Transfer SpaceId 1 owned by ACCOUNT1 to ACCOUNT2
+        ExtBuilder::build_with_storefront().execute_with(|| {
+            assert_ok!(_transfer_default_storefront_ownership());
+            // Transfer StorefrontId 1 owned by ACCOUNT1 to ACCOUNT2
             assert_ok!(_accept_default_pending_ownership()); // Accepting a transfer from ACCOUNT2
             // Check whether owner was changed
-            let space = Spaces::space_by_id(SPACE1).unwrap();
-            assert_eq!(space.owner, ACCOUNT2);
+            let storefront = Storefronts::storefront_by_id(SPACE1).unwrap();
+            assert_eq!(storefront.owner, ACCOUNT2);
 
             // Check whether storage state is correct
-            assert!(SpaceOwnership::pending_space_owner(SPACE1).is_none());
+            assert!(StorefrontOwnership::pending_storefront_owner(SPACE1).is_none());
         });
     }
 
     #[test]
-    fn accept_pending_ownership_should_fail_with_space_not_found() {
-        ExtBuilder::build_with_pending_ownership_transfer_no_space().execute_with(|| {
-            assert_noop!(_accept_default_pending_ownership(), SpacesError::<TestRuntime>::SpaceNotFound);
+    fn accept_pending_ownership_should_fail_with_storefront_not_found() {
+        ExtBuilder::build_with_pending_ownership_transfer_no_storefront().execute_with(|| {
+            assert_noop!(_accept_default_pending_ownership(), StorefrontsError::<TestRuntime>::StorefrontNotFound);
         });
     }
 
     #[test]
-    fn accept_pending_ownership_should_fail_with_no_pending_transfer_on_space() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_noop!(_accept_default_pending_ownership(), SpaceOwnershipError::<TestRuntime>::NoPendingTransferOnSpace);
+    fn accept_pending_ownership_should_fail_with_no_pending_transfer_on_storefront() {
+        ExtBuilder::build_with_storefront().execute_with(|| {
+            assert_noop!(_accept_default_pending_ownership(), StorefrontOwnershipError::<TestRuntime>::NoPendingTransferOnStorefront);
         });
     }
 
     #[test]
     fn accept_pending_ownership_should_fail_if_origin_is_already_an_owner() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_transfer_default_space_ownership());
+        ExtBuilder::build_with_storefront().execute_with(|| {
+            assert_ok!(_transfer_default_storefront_ownership());
 
             assert_noop!(_accept_pending_ownership(
                 Some(Origin::signed(ACCOUNT1)),
                 None
-            ), SpaceOwnershipError::<TestRuntime>::AlreadyASpaceOwner);
+            ), StorefrontOwnershipError::<TestRuntime>::AlreadyAStorefrontOwner);
         });
     }
 
     #[test]
     fn accept_pending_ownership_should_fail_if_origin_is_not_equal_to_pending_account() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_transfer_default_space_ownership());
+        ExtBuilder::build_with_storefront().execute_with(|| {
+            assert_ok!(_transfer_default_storefront_ownership());
 
             assert_noop!(_accept_pending_ownership(
                 Some(Origin::signed(ACCOUNT3)),
                 None
-            ), SpaceOwnershipError::<TestRuntime>::NotAllowedToAcceptOwnershipTransfer);
+            ), StorefrontOwnershipError::<TestRuntime>::NotAllowedToAcceptOwnershipTransfer);
         });
     }
 
     #[test]
     fn reject_pending_ownership_should_work() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_transfer_default_space_ownership());
-            // Transfer SpaceId 1 owned by ACCOUNT1 to ACCOUNT2
+        ExtBuilder::build_with_storefront().execute_with(|| {
+            assert_ok!(_transfer_default_storefront_ownership());
+            // Transfer StorefrontId 1 owned by ACCOUNT1 to ACCOUNT2
             assert_ok!(_reject_default_pending_ownership()); // Rejecting a transfer from ACCOUNT2
 
             // Check whether owner was not changed
-            let space = Spaces::space_by_id(SPACE1).unwrap();
-            assert_eq!(space.owner, ACCOUNT1);
+            let storefront = Storefronts::storefront_by_id(SPACE1).unwrap();
+            assert_eq!(storefront.owner, ACCOUNT1);
 
             // Check whether storage state is correct
-            assert!(SpaceOwnership::pending_space_owner(SPACE1).is_none());
+            assert!(StorefrontOwnership::pending_storefront_owner(SPACE1).is_none());
         });
     }
 
     #[test]
-    fn reject_pending_ownership_should_work_with_reject_by_current_space_owner() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_transfer_default_space_ownership());
-            // Transfer SpaceId 1 owned by ACCOUNT1 to ACCOUNT2
+    fn reject_pending_ownership_should_work_with_reject_by_current_storefront_owner() {
+        ExtBuilder::build_with_storefront().execute_with(|| {
+            assert_ok!(_transfer_default_storefront_ownership());
+            // Transfer StorefrontId 1 owned by ACCOUNT1 to ACCOUNT2
             assert_ok!(_reject_default_pending_ownership_by_current_owner()); // Rejecting a transfer from ACCOUNT2
 
             // Check whether owner was not changed
-            let space = Spaces::space_by_id(SPACE1).unwrap();
-            assert_eq!(space.owner, ACCOUNT1);
+            let storefront = Storefronts::storefront_by_id(SPACE1).unwrap();
+            assert_eq!(storefront.owner, ACCOUNT1);
 
             // Check whether storage state is correct
-            assert!(SpaceOwnership::pending_space_owner(SPACE1).is_none());
+            assert!(StorefrontOwnership::pending_storefront_owner(SPACE1).is_none());
         });
     }
 
     #[test]
-    fn reject_pending_ownership_should_fail_with_space_not_found() {
-        ExtBuilder::build_with_pending_ownership_transfer_no_space().execute_with(|| {
-            assert_noop!(_reject_default_pending_ownership(), SpacesError::<TestRuntime>::SpaceNotFound);
+    fn reject_pending_ownership_should_fail_with_storefront_not_found() {
+        ExtBuilder::build_with_pending_ownership_transfer_no_storefront().execute_with(|| {
+            assert_noop!(_reject_default_pending_ownership(), StorefrontsError::<TestRuntime>::StorefrontNotFound);
         });
     }
 
     #[test]
-    fn reject_pending_ownership_should_fail_with_no_pending_transfer_on_space() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_noop!(_reject_default_pending_ownership(), SpaceOwnershipError::<TestRuntime>::NoPendingTransferOnSpace); // Rejecting a transfer from ACCOUNT2
+    fn reject_pending_ownership_should_fail_with_no_pending_transfer_on_storefront() {
+        ExtBuilder::build_with_storefront().execute_with(|| {
+            assert_noop!(_reject_default_pending_ownership(), StorefrontOwnershipError::<TestRuntime>::NoPendingTransferOnStorefront); // Rejecting a transfer from ACCOUNT2
         });
     }
 
     #[test]
     fn reject_pending_ownership_should_fail_with_not_allowed_to_reject() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_transfer_default_space_ownership()); // Transfer SpaceId 1 owned by ACCOUNT1 to ACCOUNT2
+        ExtBuilder::build_with_storefront().execute_with(|| {
+            assert_ok!(_transfer_default_storefront_ownership()); // Transfer StorefrontId 1 owned by ACCOUNT1 to ACCOUNT2
 
             assert_noop!(_reject_pending_ownership(
                 Some(Origin::signed(ACCOUNT3)),
                 None
-            ), SpaceOwnershipError::<TestRuntime>::NotAllowedToRejectOwnershipTransfer); // Rejecting a transfer from ACCOUNT2
+            ), StorefrontOwnershipError::<TestRuntime>::NotAllowedToRejectOwnershipTransfer); // Rejecting a transfer from ACCOUNT2
         });
     }
 }

@@ -2,7 +2,7 @@
   "SocialAccount": {
     "followers_count": "u32",
     "following_accounts_count": "u16",
-    "following_spaces_count": "u16",
+    "following_storefronts_count": "u16",
     "reputation": "u32",
     "profile": "Option<Profile>"
   },

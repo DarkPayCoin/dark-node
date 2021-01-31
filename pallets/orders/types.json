@@ -1,0 +1,38 @@
+{
+  "OrderId": "u64",
+
+  "Order": {
+    "id": "OrderId",
+    "created": "WhoAndWhen",
+    "updated": "Option<WhoAndWhen>",
+    "owner": "AccountId",
+    "order_state": "OrderState",
+    "order_total": "Balance",
+    "seller": "AccountId",
+    "buyer_escrow": "Balance",
+    "seller_escrow": "Balance",
+    "storefront_id": "Option<StorefrontId>",
+    "product_id": "ProductId",
+    "content": "Content"
+
+  },
+
+  "OrderUpdate": {
+    "content": "Option<Content>",
+    "order_state": "OrderState"
+
+  },
+
+  "OrderState": {
+    "_enum": [
+      "New",
+      "Pending",
+      "Accepted",
+      "Refused",
+      "Shipped",
+      "Complete",
+      "Refunded"
+    ]
+  }
+
+}

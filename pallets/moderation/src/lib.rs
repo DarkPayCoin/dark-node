@@ -10,9 +10,9 @@ use frame_support::{
 };
 use frame_system::{self as system, ensure_signed};
 
-use pallet_utils::{Content, WhoAndWhen, SpaceId, Module as Utils};
-use pallet_posts::PostId;
-use pallet_spaces::Module as Spaces;
+use pallet_utils::{Content, WhoAndWhen, StorefrontId, Module as Utils};
+use pallet_products::ProductId;
+use pallet_storefronts::Module as Storefronts;
 
 /*
 #[cfg(test)]
@@ -30,8 +30,8 @@ pub type ReportId = u64;
 pub enum EntityId<AccountId> {
     Content(Content),
     Account(AccountId),
-    Space(SpaceId),
-    Post(PostId),
+    Storefront(StorefrontId),
+    Product(ProductId),
 }
 
 #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug)]
@@ -45,7 +45,7 @@ pub struct Report<T: Trait> {
     id: ReportId,
     created: WhoAndWhen<T>,
     reported_entity: EntityId<T::AccountId>,
-    reported_within: SpaceId,
+    reported_within: StorefrontId,
     reason: Content,
 }
 
@@ -57,20 +57,20 @@ pub struct SuggestedStatus<T: Trait> {
 }
 
 #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug)]
-pub struct SpaceModerationSettings {
+pub struct StorefrontModerationSettings {
     autoblock_threshold: Option<u16>
 }
 
 #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug)]
-pub struct SpaceModerationSettingsUpdate {
+pub struct StorefrontModerationSettingsUpdate {
     autoblock_threshold: Option<Option<u16>>
 }
 
 /// The pallet's configuration trait.
 pub trait Trait: system::Trait
-    + pallet_posts::Trait
-    + pallet_spaces::Trait
-    + pallet_space_follows::Trait
+    + pallet_products::Trait
+    + pallet_storefronts::Trait
+    + pallet_storefront_follows::Trait
     + pallet_utils::Trait
 {
     /// The overarching event type.
@@ -90,25 +90,25 @@ decl_storage! {
         pub ReportIdByAccount get(fn report_id_by_account):
             map hasher(twox_64_concat) (EntityId<T::AccountId>, T::AccountId) => Option<ReportId>;
 
-        pub ReportIdsBySpaceId: map hasher(twox_64_concat) SpaceId => Vec<ReportId>;
+        pub ReportIdsByStorefrontId: map hasher(twox_64_concat) StorefrontId => Vec<ReportId>;
 
-        pub ReportIdsByEntityInSpace get(fn report_ids_by_entity_in_space): double_map
+        pub ReportIdsByEntityInStorefront get(fn report_ids_by_entity_in_storefront): double_map
             hasher(twox_64_concat) EntityId<T::AccountId>,
-            hasher(twox_64_concat) SpaceId
+            hasher(twox_64_concat) StorefrontId
                 => Vec<ReportId>;
 
-        pub StatusByEntityInSpace get(fn status_by_entity_in_space): double_map
+        pub StatusByEntityInStorefront get(fn status_by_entity_in_storefront): double_map
             hasher(twox_64_concat) EntityId<T::AccountId>,
-            hasher(twox_64_concat) SpaceId
+            hasher(twox_64_concat) StorefrontId
                 => Option<EntityStatus>;
 
-        pub SuggestedStatusesByEntityInSpace get(fn suggested_statuses): double_map
+        pub SuggestedStatusesByEntityInStorefront get(fn suggested_statuses): double_map
             hasher(twox_64_concat) EntityId<T::AccountId>,
-            hasher(twox_64_concat) SpaceId
+            hasher(twox_64_concat) StorefrontId
              => Vec<SuggestedStatus<T>>;
 
-        pub SpaceSettings get(fn space_settings):
-            map hasher(twox_64_concat) SpaceId => Option<SpaceModerationSettings>;
+        pub StorefrontSettings get(fn storefront_settings):
+            map hasher(twox_64_concat) StorefrontId => Option<StorefrontModerationSettings>;
     }
 }
 
@@ -118,11 +118,11 @@ decl_event!(
         AccountId = <T as system::Trait>::AccountId,
         EntityId = EntityId<<T as system::Trait>::AccountId>
     {
-        EntityReported(AccountId, SpaceId, EntityId, ReportId),
-        EntityStatusSuggested(AccountId, SpaceId, EntityId, Option<EntityStatus>),
-        EntityStatusUpdated(AccountId, SpaceId, EntityId, Option<EntityStatus>),
-        EntityStatusDeleted(AccountId, SpaceId, EntityId),
-        SpaceSettingsUpdated(AccountId, SpaceId),
+        EntityReported(AccountId, StorefrontId, EntityId, ReportId),
+        EntityStatusSuggested(AccountId, StorefrontId, EntityId, Option<EntityStatus>),
+        EntityStatusUpdated(AccountId, StorefrontId, EntityId, Option<EntityStatus>),
+        EntityStatusDeleted(AccountId, StorefrontId, EntityId),
+        StorefrontSettingsUpdated(AccountId, StorefrontId),
     }
 );
 
@@ -131,7 +131,7 @@ decl_error! {
     pub enum Error for Module<T: Trait> {
         /// The account has already made a report on this entity.
         AlreadyReported,
-        /// Entity status in this space is not specified. Nothing to delete.
+        /// Entity status in this storefront is not specified. Nothing to delete.
         EntityHasNoAnyStatusInScope,
         /// Entity scope differs from the scope provided.
         EntityIsNotInScope,
@@ -145,10 +145,10 @@ decl_error! {
         NoPermissionToSuggestEntityStatus,
         /// Account has no permission to update entity status.
         NoPermissionToUpdateEntityStatus,
-        /// Account has no permission to update space settings.
-        NoPermissionToUpdateSpaceSettings,
-        /// No any updates provided for space settings.
-        NoUpdatesForSpaceSettings,
+        /// Account has no permission to update storefront settings.
+        NoPermissionToUpdateStorefrontSettings,
+        /// No any updates provided for storefront settings.
+        NoUpdatesForStorefrontSettings,
         /// Report reason shouldn't be empty.
         ReasonIsEmpty,
         /// Report was not found by its id.
@@ -179,7 +179,7 @@ decl_module! {
         pub fn report_entity(
             origin,
             entity: EntityId<T::AccountId>,
-            scope: SpaceId,
+            scope: StorefrontId,
             reason: Content
         ) -> DispatchResult {
             let who = ensure_signed(origin)?;
@@ -187,7 +187,7 @@ decl_module! {
             Utils::<T>::ensure_content_is_some(&reason).map_err(|_| Error::<T>::ReasonIsEmpty)?;
             Utils::<T>::is_valid_content(reason.clone())?;
 
-            ensure!(Spaces::<T>::require_space(scope).is_ok(), Error::<T>::InvalidScope);
+            ensure!(Storefronts::<T>::require_storefront(scope).is_ok(), Error::<T>::InvalidScope);
             Self::ensure_entity_in_scope(&entity, scope)?;
 
             ensure!(Self::report_id_by_account((&entity, &who)).is_none(), Error::<T>::AlreadyReported);
@@ -197,8 +197,8 @@ decl_module! {
 
             ReportById::<T>::insert(report_id, new_report);
             ReportIdByAccount::<T>::insert((&entity, &who), report_id);
-            ReportIdsBySpaceId::mutate(scope, |ids| ids.push(report_id));
-            ReportIdsByEntityInSpace::<T>::mutate(&entity, scope, |ids| ids.push(report_id));
+            ReportIdsByStorefrontId::mutate(scope, |ids| ids.push(report_id));
+            ReportIdsByEntityInStorefront::<T>::mutate(&entity, scope, |ids| ids.push(report_id));
             NextReportId::mutate(|n| { *n += 1; });
 
             Self::deposit_event(RawEvent::EntityReported(who, scope, entity, report_id));
@@ -206,12 +206,12 @@ decl_module! {
         }
 
         /// Leave a feedback on the report either it's confirmation or ignore.
-        /// `origin` - any permitted account (e.g. Space owner or moderator that's set via role)
+        /// `origin` - any permitted account (e.g. Storefront owner or moderator that's set via role)
         #[weight = 10_000]
         pub fn suggest_entity_status(
             origin,
             entity: EntityId<T::AccountId>,
-            scope: SpaceId,
+            scope: StorefrontId,
             status: Option<EntityStatus>,
             report_id_opt: Option<ReportId>
         ) -> DispatchResult {
@@ -222,18 +222,18 @@ decl_module! {
                 ensure!(scope == report.reported_within, Error::<T>::ScopeDiffersFromReport);
             }
 
-            let entity_status = StatusByEntityInSpace::<T>::get(&entity, scope);
+            let entity_status = StatusByEntityInStorefront::<T>::get(&entity, scope);
             ensure!(!(entity_status.is_some() && status == entity_status), Error::<T>::EntityStatusDoNotDiffer);
 
-            let space = Spaces::<T>::require_space(scope).map_err(|_| Error::<T>::InvalidScope)?;
-            Spaces::<T>::ensure_account_has_space_permission(
+            let storefront = Storefronts::<T>::require_storefront(scope).map_err(|_| Error::<T>::InvalidScope)?;
+            Storefronts::<T>::ensure_account_has_storefront_permission(
                 who.clone(),
-                &space,
-                pallet_permissions::SpacePermission::SuggestEntityStatus,
+                &storefront,
+                pallet_permissions::StorefrontPermission::SuggestEntityStatus,
                 Error::<T>::NoPermissionToSuggestEntityStatus.into(),
             )?;
 
-            let mut suggestions = SuggestedStatusesByEntityInSpace::<T>::get(&entity, scope);
+            let mut suggestions = SuggestedStatusesByEntityInStorefront::<T>::get(&entity, scope);
             let is_already_suggested = suggestions.iter().any(|suggestion| suggestion.suggested.account == who);
             ensure!(!is_already_suggested, Error::<T>::SuggestionAlreadyCreated);
             suggestions.push(SuggestedStatus::new(who.clone(), status.clone(), report_id_opt));
@@ -242,7 +242,7 @@ decl_module! {
                 .filter(|suggestion| suggestion.status == Some(EntityStatus::Blocked))
                 .count();
 
-            let autoblock_threshold_opt = Self::space_settings(scope)
+            let autoblock_threshold_opt = Self::storefront_settings(scope)
                 .unwrap_or_else(Self::default_autoblock_threshold_as_settings)
                 .autoblock_threshold;
 
@@ -253,17 +253,17 @@ decl_module! {
             }
 
             Self::deposit_event(RawEvent::EntityStatusSuggested(who, scope, entity.clone(), status));
-            SuggestedStatusesByEntityInSpace::<T>::insert(entity, scope, suggestions);
+            SuggestedStatusesByEntityInStorefront::<T>::insert(entity, scope, suggestions);
             Ok(())
         }
 
         /// Block any `entity` provided.
-        /// `origin` - any permitted account (e.g. Space owner or moderator that's set via role)
+        /// `origin` - any permitted account (e.g. Storefront owner or moderator that's set via role)
         #[weight = 10_000]
         pub fn update_entity_status(
             origin,
             entity: EntityId<T::AccountId>,
-            scope: SpaceId,
+            scope: StorefrontId,
             status_opt: Option<EntityStatus>
         ) -> DispatchResult {
             let who = ensure_signed(origin)?;
@@ -271,8 +271,8 @@ decl_module! {
             // TODO: add `forbid_content` parameter and track entity Content blocking via OCW
             //  - `forbid_content` - whether to block `Content` provided with entity.
 
-            let space = Spaces::<T>::require_space(scope).map_err(|_| Error::<T>::InvalidScope)?;
-            Self::ensure_account_status_manager(who.clone(), &space)?;
+            let storefront = Storefronts::<T>::require_storefront(scope).map_err(|_| Error::<T>::InvalidScope)?;
+            Self::ensure_account_status_manager(who.clone(), &storefront)?;
 
             if let Some(status) = &status_opt {
                 let is_entity_in_scope = Self::ensure_entity_in_scope(&entity, scope).is_ok();
@@ -280,10 +280,10 @@ decl_module! {
                 if is_entity_in_scope && status == &EntityStatus::Blocked {
                     Self::block_entity_in_scope(&entity, scope)?;
                 } else {
-                    StatusByEntityInSpace::<T>::insert(entity.clone(), scope, status);
+                    StatusByEntityInStorefront::<T>::insert(entity.clone(), scope, status);
                 }
             } else {
-                StatusByEntityInSpace::<T>::remove(entity.clone(), scope);
+                StatusByEntityInStorefront::<T>::remove(entity.clone(), scope);
             }
 
             Self::deposit_event(RawEvent::EntityStatusUpdated(who, scope, entity, status_opt));
@@ -291,16 +291,16 @@ decl_module! {
         }
 
         #[weight = 10_000]
-        pub fn delete_entity_status(origin, entity: EntityId<T::AccountId>, scope: SpaceId) -> DispatchResult {
+        pub fn delete_entity_status(origin, entity: EntityId<T::AccountId>, scope: StorefrontId) -> DispatchResult {
             let who = ensure_signed(origin)?;
 
-            let status = Self::status_by_entity_in_space(&entity, scope);
+            let status = Self::status_by_entity_in_storefront(&entity, scope);
             ensure!(status.is_some(), Error::<T>::EntityHasNoAnyStatusInScope);
 
-            let space = Spaces::<T>::require_space(scope).map_err(|_| Error::<T>::InvalidScope)?;
-            Self::ensure_account_status_manager(who.clone(), &space)?;
+            let storefront = Storefronts::<T>::require_storefront(scope).map_err(|_| Error::<T>::InvalidScope)?;
+            Self::ensure_account_status_manager(who.clone(), &storefront)?;
 
-            StatusByEntityInSpace::<T>::remove(&entity, scope);
+            StatusByEntityInStorefront::<T>::remove(&entity, scope);
 
             Self::deposit_event(RawEvent::EntityStatusDeleted(who, scope, entity));
             Ok(())
@@ -309,36 +309,36 @@ decl_module! {
         // todo: add ability to delete report_ids
 
         #[weight = 10_000]
-        fn update_space_settings(origin, space_id: SpaceId, update: SpaceModerationSettingsUpdate) -> DispatchResult {
+        fn update_storefront_settings(origin, storefront_id: StorefrontId, update: StorefrontModerationSettingsUpdate) -> DispatchResult {
             let who = ensure_signed(origin)?;
 
             let has_updates = update.autoblock_threshold.is_some();
-            ensure!(has_updates, Error::<T>::NoUpdatesForSpaceSettings);
+            ensure!(has_updates, Error::<T>::NoUpdatesForStorefrontSettings);
 
-            let space = Spaces::<T>::require_space(space_id)?;
+            let storefront = Storefronts::<T>::require_storefront(storefront_id)?;
 
-            Spaces::<T>::ensure_account_has_space_permission(
+            Storefronts::<T>::ensure_account_has_storefront_permission(
                 who.clone(),
-                &space,
-                pallet_permissions::SpacePermission::UpdateSpaceSettings,
-                Error::<T>::NoPermissionToUpdateSpaceSettings.into(),
+                &storefront,
+                pallet_permissions::StorefrontPermission::UpdateStorefrontSettings,
+                Error::<T>::NoPermissionToUpdateStorefrontSettings.into(),
             )?;
 
             let mut is_updated = false;
 
-            let mut space_settings = Self::space_settings(space_id)
+            let mut storefront_settings = Self::storefront_settings(storefront_id)
                 .unwrap_or_else(Self::default_autoblock_threshold_as_settings);
 
             if let Some(autoblock_threshold) = update.autoblock_threshold {
-                if autoblock_threshold != space_settings.autoblock_threshold {
-                    space_settings.autoblock_threshold = autoblock_threshold;
+                if autoblock_threshold != storefront_settings.autoblock_threshold {
+                    storefront_settings.autoblock_threshold = autoblock_threshold;
                     is_updated = true;
                 }
             }
 
             if is_updated {
-                SpaceSettings::insert(space_id, space_settings);
-                Self::deposit_event(RawEvent::SpaceSettingsUpdated(who, space_id));
+                StorefrontSettings::insert(storefront_id, storefront_settings);
+                Self::deposit_event(RawEvent::StorefrontSettingsUpdated(who, storefront_id));
             }
             Ok(())
         }

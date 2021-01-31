@@ -11,7 +11,7 @@ use frame_support::{
         GetDispatchInfo, DispatchClass, WeighData,
         Weight, ClassifyDispatch, PaysFee, Pays,
     },
-    dispatch::{DispatchError, DispatchResult, PostDispatchInfo},
+    dispatch::{DispatchError, DispatchResult, ProductDispatchInfo},
     traits::{
         Currency, Get, ExistenceRequirement,
         OriginTrait, IsType, Filter,
@@ -81,7 +81,7 @@ pub trait Trait: system::Trait + pallet_utils::Trait {
 
     /// The overarching call type.
     type Call: Parameter
-        + Dispatchable<Origin=Self::Origin, PostInfo=PostDispatchInfo>
+        + Dispatchable<Origin=Self::Origin, ProductInfo=ProductDispatchInfo>
         + GetDispatchInfo + From<frame_system::Call<Self>>
         + IsType<<Self as frame_system::Trait>::Call>;
 

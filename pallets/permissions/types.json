@@ -1,32 +1,32 @@
 {
-  "SpacePermissionSet": "BTreeSet<SpacePermission>",
+  "StorefrontPermissionSet": "BTreeSet<StorefrontPermission>",
 
-  "SpacePermission": {
+  "StorefrontPermission": {
     "_enum": [
       "ManageRoles",
 
-      "RepresentSpaceInternally",
-      "RepresentSpaceExternally",
+      "RepresentStorefrontInternally",
+      "RepresentStorefrontExternally",
 
-      "UpdateSpace",
+      "UpdateStorefront",
 
-      "CreateSubspaces",
-      "UpdateOwnSubspaces",
-      "DeleteOwnSubspaces",
-      "HideOwnSubspaces",
+      "CreateSubstorefronts",
+      "UpdateOwnSubstorefronts",
+      "DeleteOwnSubstorefronts",
+      "HideOwnSubstorefronts",
 
-      "UpdateAnySubspace",
-      "DeleteAnySubspace",
-      "HideAnySubspace",
+      "UpdateAnySubstorefront",
+      "DeleteAnySubstorefront",
+      "HideAnySubstorefront",
 
-      "CreatePosts",
-      "UpdateOwnPosts",
-      "DeleteOwnPosts",
-      "HideOwnPosts",
+      "CreateProducts",
+      "UpdateOwnProducts",
+      "DeleteOwnProducts",
+      "HideOwnProducts",
 
-      "UpdateAnyPost",
-      "DeleteAnyPost",
-      "HideAnyPost",
+      "UpdateAnyProduct",
+      "DeleteAnyProduct",
+      "HideAnyProduct",
 
       "CreateComments",
       "UpdateOwnComments",
@@ -39,27 +39,27 @@
       "Downvote",
       "Share",
 
-      "OverrideSubspacePermissions",
-      "OverridePostPermissions",
+      "OverrideSubstorefrontPermissions",
+      "OverrideProductPermissions",
 
       "SuggestEntityStatus",
       "UpdateEntityStatus",
 
-      "UpdateSpaceSettings"
+      "UpdateStorefrontSettings"
     ]
   },
 
-  "SpacePermissions": {
-    "none": "Option<SpacePermissionSet>",
-    "everyone": "Option<SpacePermissionSet>",
-    "follower": "Option<SpacePermissionSet>",
-    "space_owner": "Option<SpacePermissionSet>"
+  "StorefrontPermissions": {
+    "none": "Option<StorefrontPermissionSet>",
+    "everyone": "Option<StorefrontPermissionSet>",
+    "follower": "Option<StorefrontPermissionSet>",
+    "storefront_owner": "Option<StorefrontPermissionSet>"
   },
 
-  "SpacePermissionsContext": {
-    "space_id": "SpaceId",
-    "is_space_owner": "bool",
-    "is_space_follower": "bool",
-    "space_perms": "Option<SpacePermissions>"
+  "StorefrontPermissionsContext": {
+    "storefront_id": "StorefrontId",
+    "is_storefront_owner": "bool",
+    "is_storefront_follower": "bool",
+    "storefront_perms": "Option<StorefrontPermissions>"
   }
 }

@@ -1,17 +1,17 @@
 # docker-compose.yml
 version: "3"
 services:
-  subsocial-substrate:
+  darkdot-substrate:
     build:
       context: ..
       dockerfile: ./docker/Dockerfile
-    image: dappforce/subsocial-node:latest
-    container_name: subsocial-node
+    image: d4rk/dark-node:latest
+    container_name: dark-node
     network_mode: "host"
     restart: on-failure
     volumes:
       - chain_data:/data
-    command: ./subsocial-node --dev
+    command: ./dark-node --dev
 
 volumes:
   chain_data:

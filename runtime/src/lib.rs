@@ -12,7 +12,7 @@ use sp_std::{
 	prelude::*,
 	iter::FromIterator,
 };
-use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
+use sp_core::{crypto::KeyTypeId, OpaqueMetadata, Encode};
 use sp_runtime::{
 	ApplyExtrinsicResult, generic, create_runtime_str, impl_opaque_keys, MultiSignature,
 	transaction_validity::{TransactionValidity, TransactionSource}, Perquintill, FixedPointNumber,
@@ -31,11 +31,12 @@ use sp_version::NativeVersion;
 // A few exports that help ease life for downstream crates.
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
+use sp_runtime::SaturatedConversion;
 pub use timestamp::Call as TimestampCall;
 pub use balances::Call as BalancesCall;
-pub use sp_runtime::{Permill, Perbill};
+pub use sp_runtime::{Permill, Perbill, transaction_validity};
 pub use frame_support::{
-	construct_runtime, parameter_types, StorageValue,
+	construct_runtime, parameter_types, StorageValue, debug,
 	traits::{KeyOwnerProofSystem, Randomness, Currency, Imbalance, OnUnbalanced, Filter},
 	weights::{
 		Weight, IdentityFee,
@@ -43,13 +44,15 @@ pub use frame_support::{
 	},
 };
 use transaction_payment_rpc_runtime_api::RuntimeDispatchInfo;
-pub use transaction_payment::{Multiplier, TargetedFeeAdjustment};
+pub use transaction_payment::{Multiplier, TargetedFeeAdjustment, ChargeTransactionPayment};
 
 use pallet_permissions::{
-	SpacePermission as SP,
-	SpacePermissions,
-	SpacePermissionSet
+	StorefrontPermission as SP,
+	StorefrontPermissions,
+	StorefrontPermissionSet
 };
+
+pub use pallet_ocw;
 
 pub mod constants;
 use constants::{currency::*, time::*};
@@ -106,8 +109,8 @@ pub mod opaque {
 
 /// This runtime version.
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-	spec_name: create_runtime_str!("subsocial"),
-	impl_name: create_runtime_str!("dappforce-subsocial"),
+	spec_name: create_runtime_str!("darkdot"),
+	impl_name: create_runtime_str!("d4rk-darkdot"),
 	authoring_version: 0,
 	spec_version: 7,
 	impl_version: 0,
@@ -266,6 +269,7 @@ impl transaction_payment::Trait for Runtime {
     TargetedFeeAdjustment<Self, TargetBlockFullness, AdjustmentVariable, MinimumMultiplier>;
 }
 
+
 impl sudo::Trait for Runtime {
 	type Event = Event;
 	type Call = Call;
@@ -287,7 +291,7 @@ impl pallet_utility::Trait for Runtime {
 	type Call = Call;
 }
 
-// Subsocial custom pallets go below:
+// Darkdot custom pallets go below:
 // ------------------------------------------------------------------------------------------------
 
 parameter_types! {
@@ -302,20 +306,22 @@ impl pallet_utils::Trait for Runtime {
 	type MaxHandleLen = MaxHandleLen;
 }
 
+
+
 parameter_types! {
-  pub DefaultSpacePermissions: SpacePermissions = SpacePermissions {
+  pub DefaultStorefrontPermissions: StorefrontPermissions = StorefrontPermissions {
 
     // No permissions disabled by default
     none: None,
 
-    everyone: Some(SpacePermissionSet::from_iter(vec![
-			SP::UpdateOwnSubspaces,
-			SP::DeleteOwnSubspaces,
-			SP::HideOwnSubspaces,
+    everyone: Some(StorefrontPermissionSet::from_iter(vec![
+			SP::UpdateOwnSubstorefronts,
+			SP::DeleteOwnSubstorefronts,
+			SP::HideOwnSubstorefronts,
 
-			SP::UpdateOwnPosts,
-			SP::DeleteOwnPosts,
-			SP::HideOwnPosts,
+			SP::UpdateOwnProducts,
+			SP::DeleteOwnProducts,
+			SP::HideOwnProducts,
 
 			SP::CreateComments,
 			SP::UpdateOwnComments,
@@ -330,53 +336,53 @@ parameter_types! {
     // Followers can do everything that everyone else can.
     follower: None,
 
-    space_owner: Some(SpacePermissionSet::from_iter(vec![
+    storefront_owner: Some(StorefrontPermissionSet::from_iter(vec![
       SP::ManageRoles,
-      SP::RepresentSpaceInternally,
-      SP::RepresentSpaceExternally,
-      SP::OverrideSubspacePermissions,
-      SP::OverridePostPermissions,
+      SP::RepresentStorefrontInternally,
+      SP::RepresentStorefrontExternally,
+      SP::OverrideSubstorefrontPermissions,
+      SP::OverrideProductPermissions,
 
-      SP::CreateSubspaces,
-      SP::CreatePosts,
+      SP::CreateSubstorefronts,
+      SP::CreateProducts,
 
-      SP::UpdateSpace,
-      SP::UpdateAnySubspace,
-      SP::UpdateAnyPost,
+      SP::UpdateStorefront,
+      SP::UpdateAnySubstorefront,
+      SP::UpdateAnyProduct,
 
-      SP::DeleteAnySubspace,
-      SP::DeleteAnyPost,
+      SP::DeleteAnySubstorefront,
+      SP::DeleteAnyProduct,
 
-      SP::HideAnySubspace,
-      SP::HideAnyPost,
+      SP::HideAnySubstorefront,
+      SP::HideAnyProduct,
       SP::HideAnyComment,
 
       SP::SuggestEntityStatus,
       SP::UpdateEntityStatus,
 
-      SP::UpdateSpaceSettings,
+      SP::UpdateStorefrontSettings,
     ].into_iter())),
   };
 }
 
 impl pallet_permissions::Trait for Runtime {
-	type DefaultSpacePermissions = DefaultSpacePermissions;
+	type DefaultStorefrontPermissions = DefaultStorefrontPermissions;
 }
 
 parameter_types! {
   pub const MaxCommentDepth: u32 = 10;
 }
 
-impl pallet_posts::Trait for Runtime {
+impl pallet_products::Trait for Runtime {
 	type Event = Event;
 	type MaxCommentDepth = MaxCommentDepth;
-	type PostScores = Scores;
-	type AfterPostUpdated = PostHistory;
+	type ProductScores = Scores;
+	type AfterProductUpdated = ProductHistory;
 }
 
 parameter_types! {}
 
-impl pallet_post_history::Trait for Runtime {}
+impl pallet_product_history::Trait for Runtime {}
 
 parameter_types! {}
 
@@ -401,7 +407,7 @@ parameter_types! {}
 
 impl pallet_reactions::Trait for Runtime {
 	type Event = Event;
-	type PostReactionScores = Scores;
+	type ProductReactionScores = Scores;
 }
 
 parameter_types! {
@@ -411,17 +417,17 @@ parameter_types! {
 impl pallet_roles::Trait for Runtime {
 	type Event = Event;
 	type MaxUsersToProcessPerDeleteRole = MaxUsersToProcessPerDeleteRole;
-	type Spaces = Spaces;
-	type SpaceFollows = SpaceFollows;
+	type Storefronts = Storefronts;
+	type StorefrontFollows = StorefrontFollows;
 }
 
 parameter_types! {
-  pub const FollowSpaceActionWeight: i16 = 7;
+  pub const FollowStorefrontActionWeight: i16 = 7;
   pub const FollowAccountActionWeight: i16 = 3;
 
-  pub const SharePostActionWeight: i16 = 7;
-  pub const UpvotePostActionWeight: i16 = 5;
-  pub const DownvotePostActionWeight: i16 = -3;
+  pub const ShareProductActionWeight: i16 = 7;
+  pub const UpvoteProductActionWeight: i16 = 5;
+  pub const DownvoteProductActionWeight: i16 = -3;
 
   pub const CreateCommentActionWeight: i16 = 5;
   pub const ShareCommentActionWeight: i16 = 5;
@@ -432,12 +438,12 @@ parameter_types! {
 impl pallet_scores::Trait for Runtime {
 	type Event = Event;
 
-	type FollowSpaceActionWeight = FollowSpaceActionWeight;
+	type FollowStorefrontActionWeight = FollowStorefrontActionWeight;
 	type FollowAccountActionWeight = FollowAccountActionWeight;
 
-	type SharePostActionWeight = SharePostActionWeight;
-	type UpvotePostActionWeight = UpvotePostActionWeight;
-	type DownvotePostActionWeight = DownvotePostActionWeight;
+	type ShareProductActionWeight = ShareProductActionWeight;
+	type UpvoteProductActionWeight = UpvoteProductActionWeight;
+	type DownvoteProductActionWeight = DownvoteProductActionWeight;
 
 	type CreateCommentActionWeight = CreateCommentActionWeight;
 	type ShareCommentActionWeight = ShareCommentActionWeight;
@@ -447,34 +453,34 @@ impl pallet_scores::Trait for Runtime {
 
 parameter_types! {}
 
-impl pallet_space_follows::Trait for Runtime {
+impl pallet_storefront_follows::Trait for Runtime {
 	type Event = Event;
-	type BeforeSpaceFollowed = Scores;
-	type BeforeSpaceUnfollowed = Scores;
+	type BeforeStorefrontFollowed = Scores;
+	type BeforeStorefrontUnfollowed = Scores;
 }
 
 parameter_types! {}
 
-impl pallet_space_ownership::Trait for Runtime {
+impl pallet_storefront_ownership::Trait for Runtime {
 	type Event = Event;
 }
 
 parameter_types! {
-	pub SpaceCreationFee: Balance = 50 * CENTS;
+	pub StorefrontCreationFee: Balance = 500 * DARKS;
 }
 
-impl pallet_spaces::Trait for Runtime {
+impl pallet_storefronts::Trait for Runtime {
 	type Event = Event;
 	type Roles = Roles;
-	type SpaceFollows = SpaceFollows;
-	type BeforeSpaceCreated = SpaceFollows;
-	type AfterSpaceUpdated = SpaceHistory;
-	type SpaceCreationFee = SpaceCreationFee;
+	type StorefrontFollows = StorefrontFollows;
+	type BeforeStorefrontCreated = StorefrontFollows;
+	type AfterStorefrontUpdated = StorefrontHistory;
+	type StorefrontCreationFee = StorefrontCreationFee;
 }
 
 parameter_types! {}
 
-impl pallet_space_history::Trait for Runtime {}
+impl pallet_storefront_history::Trait for Runtime {}
 
 pub struct BaseFilter;
 impl Filter<Call> for BaseFilter {
@@ -488,6 +494,107 @@ impl Filter<Call> for BaseFilter {
 	}
 }
 
+
+
+
+/* Orders */
+parameter_types! {}
+
+impl pallet_orders::Trait for Runtime {
+	type Event = Event;
+	type AfterOrderUpdated = OrderHistory;
+}
+
+parameter_types! {}
+
+impl pallet_order_history::Trait for Runtime {}
+
+
+/* Offchain fetcher */
+/// Payload data to be signed when making signed transaction from off-chain workers,
+///   inside `create_transaction` function.
+pub type SignedPayload = generic::SignedPayload<Call, SignedExtra>;
+
+/// Configure the template pallet in pallets/template.
+impl pallet_ocw::Trait for Runtime {
+	type Event = Event;
+	type Call = Call;
+
+	type AuthorityId = pallet_ocw::crypto::TestAuthId;
+
+	type GracePeriod = GracePeriod;
+}
+
+impl<LocalCall> system::offchain::CreateSignedTransaction<LocalCall> for Runtime
+	where
+		Call: From<LocalCall>,
+{
+	fn create_transaction<C: system::offchain::AppCrypto<Self::Public, Self::Signature>>(
+		call: Call,
+		public: <Signature as sp_runtime::traits::Verify>::Signer,
+		account: AccountId,
+		index: Index,
+	) -> Option<(
+		Call,
+		<UncheckedExtrinsic as sp_runtime::traits::Extrinsic>::SignaturePayload,
+	)> {
+		let period = BlockHashCount::get() as u64;
+		let current_block = System::block_number()
+			.saturated_into::<u64>()
+			.saturating_sub(1);
+		let tip = 0;
+		let extra: SignedExtra = (
+			system::CheckSpecVersion::<Runtime>::new(),
+			system::CheckTxVersion::<Runtime>::new(),
+			system::CheckGenesis::<Runtime>::new(),
+			system::CheckEra::<Runtime>::from(generic::Era::mortal(period, current_block)),
+			system::CheckNonce::<Runtime>::from(index),
+			system::CheckWeight::<Runtime>::new(),
+			transaction_payment::ChargeTransactionPayment::<Runtime>::from(tip),
+		);
+
+		#[cfg_attr(not(feature = "std"), allow(unused_variables))]
+			let raw_payload = SignedPayload::new(call, extra)
+			.map_err(|e| {
+				debug::native::warn!("SignedPayload error: {:?}", e);
+			})
+			.ok()?;
+
+		let signature = raw_payload.using_encoded(|payload| C::sign(payload, public))?;
+
+		let address = account;
+		let (call, extra, _) = raw_payload.deconstruct();
+		Some((call, (address, signature, extra)))
+	}
+}
+
+impl system::offchain::SigningTypes for Runtime {
+	type Public = <Signature as sp_runtime::traits::Verify>::Signer;
+	type Signature = Signature;
+}
+
+impl<C> system::offchain::SendTransactionTypes<C> for Runtime
+	where
+		Call: From<C>,
+{
+	type OverarchingCall = Call;
+	type Extrinsic = UncheckedExtrinsic;
+}
+
+parameter_types! {
+	pub const ValidityPeriod: u32 = 50;
+	pub const AggregateQueueNum: u32 = 10;
+	pub const AggregateInterval: BlockNumber = 15;
+}
+
+parameter_types! {
+	pub const GracePeriod: BlockNumber = 5;
+	pub const UnsignedInterval: u64 = 128;
+	pub const UnsignedPriority: u64 = 1 << 20;
+}
+
+
+
 /*parameter_types! {
 	pub const MaxSessionKeysPerAccount: u16 = 10;
 }
@@ -497,9 +604,9 @@ impl Default for SessionKeysProxyFilter { fn default() -> Self { Self } }
 impl Filter<Call> for SessionKeysProxyFilter {
 	fn filter(c: &Call) -> bool {
 		match *c {
-			Call::SpaceFollows(..) => true,
+			Call::StorefrontFollows(..) => true,
 			Call::ProfileFollows(..) => true,
-			Call::Posts(..) => true,
+			Call::Products(..) => true,
 			Call::Reactions(..) => true,
 			_ => false,
 		}
@@ -530,21 +637,24 @@ construct_runtime!(
 		Scheduler: pallet_scheduler::{Module, Call, Storage, Event<T>},
 		Utility: pallet_utility::{Module, Call, Event},
 
-		// Subsocial custom pallets:
+		// Darkdot custom pallets:
 		Permissions: pallet_permissions::{Module, Call},
-		Posts: pallet_posts::{Module, Call, Storage, Event<T>},
-		PostHistory: pallet_post_history::{Module, Storage},
+		Products: pallet_products::{Module, Call, Storage, Event<T>},
+		ProductHistory: pallet_product_history::{Module, Storage},
 		ProfileFollows: pallet_profile_follows::{Module, Call, Storage, Event<T>},
 		Profiles: pallet_profiles::{Module, Call, Storage, Event<T>},
 		ProfileHistory: pallet_profile_history::{Module, Storage},
 		Reactions: pallet_reactions::{Module, Call, Storage, Event<T>},
 		Roles: pallet_roles::{Module, Call, Storage, Event<T>},
 		Scores: pallet_scores::{Module, Call, Storage, Event<T>},
-		SpaceFollows: pallet_space_follows::{Module, Call, Storage, Event<T>},
-		SpaceHistory: pallet_space_history::{Module, Storage},
-		SpaceOwnership: pallet_space_ownership::{Module, Call, Storage, Event<T>},
-		Spaces: pallet_spaces::{Module, Call, Storage, Event<T>, Config<T>},
+		StorefrontFollows: pallet_storefront_follows::{Module, Call, Storage, Event<T>},
+		StorefrontHistory: pallet_storefront_history::{Module, Storage},
+		StorefrontOwnership: pallet_storefront_ownership::{Module, Call, Storage, Event<T>},
+		Storefronts: pallet_storefronts::{Module, Call, Storage, Event<T>, Config<T>},
 		Utils: pallet_utils::{Module, Storage, Event<T>, Config<T>},
+		Orders: pallet_orders::{Module, Call, Storage, Event<T>},
+		OrderHistory: pallet_order_history::{Module, Storage},
+		OCWModule: pallet_ocw::{Module, Call, Storage, Event<T>},
 		// SessionKeys: session_keys::{Module, Call, Storage, Config<T>, Event<T>},
 	}
 );

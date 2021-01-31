@@ -2,4 +2,4 @@
 
 set -e
 
-./target/release/subsocial-node --dev
+./target/release/dark-node --dev

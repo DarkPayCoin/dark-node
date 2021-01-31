@@ -2,5 +2,5 @@
 
 set -e
 
-./target/release/subsocial-node purge-chain --dev -y
-./target/release/subsocial-node --dev
+./target/release/dark-node purge-chain --dev -y
+./target/release/dark-node --dev

@@ -1,11 +1,19 @@
+#####################################################################
+#                                                                   #
+#   This project is a fork of great Subsocial project.              #
+#   Please visit, share and love https://subsocial.network/         #
+#   Orginal code : https://github.com/dappforce                     #
+#                                                                   #
+#####################################################################
+
 [package]
 name = "df-integration-tests"
 version = "0.4.0"
-authors = ["DappForce <dappforce@pm.me>"]
+authors = ["DarkDot <admin@darkdot.network>"]
 edition = "2018"
 license = "GPL-3.0-only"
-homepage = "https://subsocial.network"
-repository = "https://github.com/dappforce/dappforce-subsocial-node"
+homepage = "https://darkdot.network"
+repository = "https://github.com/DarkPayCoin/substrate-dark-node"
 description = "Integration tests"
 keywords = ["blockchain", "cryptocurrency", "social-network", "news-feed", "marketplace"]
 categories = ["cryptography::cryptocurrencies"]
@@ -20,18 +28,18 @@ std = [
     'sp-std/std',
     'pallet-timestamp/std',
     'pallet-permissions/std',
-    'pallet-posts/std',
-    'pallet-post-history/std',
+    'pallet-products/std',
+    'pallet-product-history/std',
     'pallet-profiles/std',
     'pallet-profile-history/std',
     'pallet-profile-follows/std',
     'pallet-reactions/std',
     'pallet-roles/std',
     'pallet-scores/std',
-    'pallet-spaces/std',
-    'pallet-space-follows/std',
-    'pallet-space-history/std',
-    'pallet-space-ownership/std',
+    'pallet-storefronts/std',
+    'pallet-storefront-follows/std',
+    'pallet-storefront-history/std',
+    'pallet-storefront-ownership/std',
     'pallet-utils/std'
 ]
 
@@ -75,13 +83,13 @@ version = '2.0.0-rc4'
 default-features = false
 path = "../permissions"
 
-[dev-dependencies.pallet-posts]
+[dev-dependencies.pallet-products]
 default-features = false
-path = "../posts"
+path = "../products"
 
-[dev-dependencies.pallet-post-history]
+[dev-dependencies.pallet-product-history]
 default-features = false
-path = "../post-history"
+path = "../product-history"
 
 [dev-dependencies.pallet-profiles]
 default-features = false
@@ -107,21 +115,21 @@ path = "../roles"
 default-features = false
 path = "../scores"
 
-[dev-dependencies.pallet-spaces]
+[dev-dependencies.pallet-storefronts]
 default-features = false
-path = "../spaces"
+path = "../storefronts"
 
-[dev-dependencies.pallet-space-follows]
+[dev-dependencies.pallet-storefront-follows]
 default-features = false
-path = "../space-follows"
+path = "../storefront-follows"
 
-[dev-dependencies.pallet-space-history]
+[dev-dependencies.pallet-storefront-history]
 default-features = false
-path = "../space-history"
+path = "../storefront-history"
 
-[dev-dependencies.pallet-space-ownership]
+[dev-dependencies.pallet-storefront-ownership]
 default-features = false
-path = "../space-ownership"
+path = "../storefront-ownership"
 
 [dev-dependencies.pallet-utils]
 default-features = false

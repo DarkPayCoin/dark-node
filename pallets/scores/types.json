@@ -1,14 +1,14 @@
 {
   "ScoringAction": {
     "_enum": [
-      "UpvotePost",
-      "DownvotePost",
-      "SharePost",
+      "UpvoteProduct",
+      "DownvoteProduct",
+      "ShareProduct",
       "CreateComment",
       "UpvoteComment",
       "DownvoteComment",
       "ShareComment",
-      "FollowSpace",
+      "FollowStorefront",
       "FollowAccount"
     ]
   }

@@ -1,11 +1,19 @@
+#####################################################################
+#                                                                   #
+#   This project is a fork of great Subsocial project.              #
+#   Please visit, share and love https://subsocial.network/         #
+#   Orginal code : https://github.com/dappforce                     #
+#                                                                   #
+#####################################################################
+
 [package]
 name = 'pallet-permissions'
 version = '0.4.0'
-authors = ['DappForce <dappforce@pm.me>']
+authors = ['DarkDot <admin@darkdot.network>']
 edition = '2018'
 license = 'GPL-3.0-only'
-homepage = 'https://subsocial.network'
-repository = 'https://github.com/dappforce/dappforce-subsocial-node'
+homepage = 'https://darkdot.network'
+repository = 'https://github.com/DarkPayCoin/substrate-dark-node'
 description = 'Permission management pallet'
 keywords = ['blockchain', 'cryptocurrency', 'social-network', 'news-feed', 'marketplace']
 categories = ['cryptography::cryptocurrencies']

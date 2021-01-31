@@ -4,7 +4,7 @@
   "IpfsCid": "Text",
 
 
-  "SpaceId": "u64",
+  "StorefrontId": "u64",
 
   "WhoAndWhen": {
     "account": "AccountId",
@@ -15,7 +15,7 @@
   "User": {
     "_enum": {
       "Account": "AccountId",
-      "Space": "SpaceId"
+      "Storefront": "StorefrontId"
     }
   },
 
@@ -29,60 +29,63 @@
   },
 
 
-  "SpaceForRoles": {
+  "StorefrontForRoles": {
     "owner": "AccountId",
-    "permissions": "Option<SpacePermissions>"
+    "permissions": "Option<StorefrontPermissions>"
   },
 
 
-  "Space": {
-    "id": "SpaceId",
+  "Storefront": {
+    "id": "StorefrontId",
     "created": "WhoAndWhen",
     "updated": "Option<WhoAndWhen>",
 
     "owner": "AccountId",
 
-    "parent_id": "Option<SpaceId>",
+    "parent_id": "Option<StorefrontId>",
     "handle": "Option<Text>",
     "content": "Content",
     "hidden": "bool",
+    "private": "bool",
 
-    "posts_count": "u32",
-    "hidden_posts_count": "u32",
+    "products_count": "u32",
+    "hidden_products_count": "u32",
+    "private_products_count": "u32",
     "followers_count": "u32",
 
     "score": "i32",
 
-    "permissions": "Option<SpacePermissions>"
+    "permissions": "Option<StorefrontPermissions>"
   },
 
-  "SpaceUpdate": {
-    "parent_id": "Option<Option<SpaceId>>",
+  "StorefrontUpdate": {
+    "parent_id": "Option<Option<StorefrontId>>",
     "handle": "Option<Option<Text>>",
     "content": "Option<Content>",
     "hidden": "Option<bool>",
-    "permissions": "Option<Option<SpacePermissions>>"
+    "private": "Option<bool>",
+    "permissions": "Option<Option<StorefrontPermissions>>"
   },
 
 
-  "SpaceHistoryRecord": {
+  "StorefrontHistoryRecord": {
     "edited": "WhoAndWhen",
-    "old_data": "SpaceUpdate"
+    "old_data": "StorefrontUpdate"
   },
 
 
-  "PostId": "u64",
+  "ProductId": "u64",
 
-  "Post": {
-    "id": "PostId",
+  "Product": {
+    "id": "ProductId",
     "created": "WhoAndWhen",
     "updated": "Option<WhoAndWhen>",
 
     "owner": "AccountId",
 
-    "extension": "PostExtension",
+    "extension": "ProductExtension",
 
-    "space_id": "Option<SpaceId>",
+    "storefront_id": "Option<StorefrontId>",
     "content": "Content",
     "hidden": "bool",
 
@@ -96,36 +99,36 @@
     "score": "i32"
   },
 
-  "PostUpdate": {
-    "space_id": "Option<SpaceId>",
+  "ProductUpdate": {
+    "storefront_id": "Option<StorefrontId>",
     "content": "Option<Content>",
     "hidden": "Option<bool>"
   },
 
-  "PostExtension": {
+  "ProductExtension": {
     "_enum": {
-      "RegularPost": "Null",
+      "RegularProduct": "Null",
       "Comment": "Comment",
-      "SharedPost": "PostId"
+      "SharedProduct": "ProductId"
     }
   },
 
   "Comment": {
-    "parent_id": "Option<PostId>",
-    "root_post_id": "PostId"
+    "parent_id": "Option<ProductId>",
+    "root_product_id": "ProductId"
   },
 
 
-  "PostHistoryRecord": {
+  "ProductHistoryRecord": {
     "edited": "WhoAndWhen",
-    "old_data": "PostUpdate"
+    "old_data": "ProductUpdate"
   },
 
 
   "SocialAccount": {
     "followers_count": "u32",
     "following_accounts_count": "u16",
-    "following_spaces_count": "u16",
+    "following_storefronts_count": "u16",
     "reputation": "u32",
     "profile": "Option<Profile>"
   },
@@ -166,47 +169,47 @@
 
   "ScoringAction": {
     "_enum": [
-      "UpvotePost",
-      "DownvotePost",
-      "SharePost",
+      "UpvoteProduct",
+      "DownvoteProduct",
+      "ShareProduct",
       "CreateComment",
       "UpvoteComment",
       "DownvoteComment",
       "ShareComment",
-      "FollowSpace",
+      "FollowStorefront",
       "FollowAccount"
     ]
   },
 
 
-  "SpacePermissionSet": "BTreeSet<SpacePermission>",
+  "StorefrontPermissionSet": "BTreeSet<StorefrontPermission>",
 
-  "SpacePermission": {
+  "StorefrontPermission": {
     "_enum": [
       "ManageRoles",
 
-      "RepresentSpaceInternally",
-      "RepresentSpaceExternally",
+      "RepresentStorefrontInternally",
+      "RepresentStorefrontExternally",
 
-      "UpdateSpace",
+      "UpdateStorefront",
 
-      "CreateSubspaces",
-      "UpdateOwnSubspaces",
-      "DeleteOwnSubspaces",
-      "HideOwnSubspaces",
+      "CreateSubstorefronts",
+      "UpdateOwnSubstorefronts",
+      "DeleteOwnSubstorefronts",
+      "HideOwnSubstorefronts",
 
-      "UpdateAnySubspace",
-      "DeleteAnySubspace",
-      "HideAnySubspace",
+      "UpdateAnySubstorefront",
+      "DeleteAnySubstorefront",
+      "HideAnySubstorefront",
 
-      "CreatePosts",
-      "UpdateOwnPosts",
-      "DeleteOwnPosts",
-      "HideOwnPosts",
+      "CreateProducts",
+      "UpdateOwnProducts",
+      "DeleteOwnProducts",
+      "HideOwnProducts",
 
-      "UpdateAnyPost",
-      "DeleteAnyPost",
-      "HideAnyPost",
+      "UpdateAnyProduct",
+      "DeleteAnyProduct",
+      "HideAnyProduct",
 
       "CreateComments",
       "UpdateOwnComments",
@@ -219,28 +222,28 @@
       "Downvote",
       "Share",
 
-      "OverrideSubspacePermissions",
-      "OverridePostPermissions",
+      "OverrideSubstorefrontPermissions",
+      "OverrideProductPermissions",
 
       "SuggestEntityStatus",
       "UpdateEntityStatus",
 
-      "UpdateSpaceSettings"
+      "UpdateStorefrontSettings"
     ]
   },
 
-  "SpacePermissions": {
-    "none": "Option<SpacePermissionSet>",
-    "everyone": "Option<SpacePermissionSet>",
-    "follower": "Option<SpacePermissionSet>",
-    "space_owner": "Option<SpacePermissionSet>"
+  "StorefrontPermissions": {
+    "none": "Option<StorefrontPermissionSet>",
+    "everyone": "Option<StorefrontPermissionSet>",
+    "follower": "Option<StorefrontPermissionSet>",
+    "storefront_owner": "Option<StorefrontPermissionSet>"
   },
 
-  "SpacePermissionsContext": {
-    "space_id": "SpaceId",
-    "is_space_owner": "bool",
-    "is_space_follower": "bool",
-    "space_perms": "Option<SpacePermissions>"
+  "StorefrontPermissionsContext": {
+    "storefront_id": "StorefrontId",
+    "is_storefront_owner": "bool",
+    "is_storefront_follower": "bool",
+    "storefront_perms": "Option<StorefrontPermissions>"
   },
 
 
@@ -250,16 +253,55 @@
     "created": "WhoAndWhen",
     "updated": "Option<WhoAndWhen>",
     "id": "RoleId",
-    "space_id": "SpaceId",
+    "storefront_id": "StorefrontId",
     "disabled": "bool",
     "expires_at": "Option<BlockNumber>",
     "content": "Content",
-    "permissions": "SpacePermissionSet"
+    "permissions": "StorefrontPermissionSet"
   },
 
   "RoleUpdate": {
     "disabled": "Option<bool>",
     "content": "Option<Content>",
-    "permissions": "Option<SpacePermissionSet>"
-  }
+    "permissions": "Option<StorefrontPermissionSet>"
+  },
+
+  
+  
+    "OrderId": "u64",
+  
+    "Order": {
+      "id": "OrderId",
+      "created": "WhoAndWhen",
+      "updated": "Option<WhoAndWhen>",
+      "owner": "AccountId",
+      "order_state": "OrderState",
+      "order_total": "Balance",
+      "seller": "AccountId",
+      "buyer_escrow": "Balance",
+      "seller_escrow": "Balance",
+      "storefront_id": "Option<StorefrontId>",
+      "product_id": "ProductId",
+      "content": "Content"
+  
+    },
+  
+    "OrderUpdate": {
+      "content": "Option<Content>",
+      "order_state": "OrderState"
+    },
+  
+  
+    "OrderState": {
+      "_enum": [
+        "New",
+        "Pending",
+        "Accepted",
+        "Refused",
+        "Shipped",
+        "Complete",
+        "Refunded"
+      ]
+    }
+    
 }

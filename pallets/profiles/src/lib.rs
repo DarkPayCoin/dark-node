@@ -16,7 +16,7 @@ use pallet_utils::{Module as Utils, WhoAndWhen, Content};
 pub struct SocialAccount<T: Trait> {
     pub followers_count: u32,
     pub following_accounts_count: u16,
-    pub following_spaces_count: u16,
+    pub following_storefronts_count: u16,
     pub reputation: u32,
     pub profile: Option<Profile<T>>,
 }
@@ -157,12 +157,12 @@ impl <T: Trait> SocialAccount<T> {
         self.following_accounts_count = self.following_accounts_count.saturating_sub(1);
     }
 
-    pub fn inc_following_spaces(&mut self) {
-        self.following_spaces_count = self.following_spaces_count.saturating_add(1);
+    pub fn inc_following_storefronts(&mut self) {
+        self.following_storefronts_count = self.following_storefronts_count.saturating_add(1);
     }
 
-    pub fn dec_following_spaces(&mut self) {
-        self.following_spaces_count = self.following_spaces_count.saturating_sub(1);
+    pub fn dec_following_storefronts(&mut self) {
+        self.following_storefronts_count = self.following_storefronts_count.saturating_sub(1);
     }
 }
 
@@ -191,7 +191,7 @@ impl<T: Trait> Module<T> {
             SocialAccount {
                 followers_count: 0,
                 following_accounts_count: 0,
-                following_spaces_count: 0,
+                following_storefronts_count: 0,
                 reputation: 1,
                 profile: None,
             }
@@ -201,5 +201,5 @@ impl<T: Trait> Module<T> {
 
 #[impl_trait_for_tuples::impl_for_tuples(10)]
 pub trait AfterProfileUpdated<T: Trait> {
-    fn after_profile_updated(account: T::AccountId, post: &Profile<T>, old_data: ProfileUpdate);
+    fn after_profile_updated(account: T::AccountId, product: &Profile<T>, old_data: ProfileUpdate);
 }

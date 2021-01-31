@@ -20,7 +20,7 @@ fn create_role_should_work() {
         assert_eq!(Roles::next_role_id(), ROLE2);
 
         assert!(role.updated.is_none());
-        assert_eq!(role.space_id, SPACE1);
+        assert_eq!(role.storefront_id, SPACE1);
         assert_eq!(role.disabled, false);
         assert_eq!(role.content, self::default_role_content_ipfs());
         assert_eq!(
@@ -36,7 +36,7 @@ fn create_role_should_work_with_a_few_roles() {
         assert_ok!(
             _create_role(
                 Some(Origin::signed(ACCOUNT2)),
-                None, // On SpaceId 1
+                None, // On StorefrontId 1
                 None, // Without time_to_live
                 None, // With default content
                 Some(self::permission_set_updated())
@@ -51,7 +51,7 @@ fn create_role_should_work_with_a_few_roles() {
         assert_eq!(Roles::next_role_id(), ROLE4);
 
         assert!(role.updated.is_none());
-        assert_eq!(role.space_id, SPACE1);
+        assert_eq!(role.storefront_id, SPACE1);
         assert_eq!(role.disabled, false);
         assert_eq!(role.content, self::default_role_content_ipfs());
         assert_eq!(
@@ -62,7 +62,7 @@ fn create_role_should_work_with_a_few_roles() {
 }
 
 #[test]
-fn create_role_should_fail_with_space_not_found() {
+fn create_role_should_fail_with_storefront_not_found() {
     ExtBuilder::build().execute_with(|| {
         assert_noop!(
             _create_role(
@@ -71,7 +71,7 @@ fn create_role_should_fail_with_space_not_found() {
                 None, // Without time_to_live
                 None, // With default content
                 None // With default permission set
-            ), "SpaceNotFound"
+            ), "StorefrontNotFound"
         );
     });
 }
@@ -82,7 +82,7 @@ fn create_role_should_fail_with_no_permission() {
         assert_noop!(
             _create_role(
                 Some(Origin::signed(ACCOUNT2)),
-                None, // On SpaceId 1
+                None, // On StorefrontId 1
                 None, // Without time_to_live
                 None, // With default content
                 None // With default permission set
@@ -97,7 +97,7 @@ fn create_role_should_fail_with_no_permissions_provided() {
         assert_noop!(
             _create_role(
                 None, // From ACCOUNT1
-                None, // On SpaceId 1
+                None, // On StorefrontId 1
                 None, // Without time_to_live
                 None, // With default permission set
                 Some(self::permission_set_empty())
@@ -112,7 +112,7 @@ fn create_role_should_fail_with_ipfs_is_incorrect() {
     ExtBuilder::build().execute_with(|| {
         assert_noop!(_create_role(
             None, // From ACCOUNT1
-            None, // On SpaceId 1
+            None, // On StorefrontId 1
             None, // Without time_to_live
             Some(self::invalid_role_content_ipfs()),
             None // With default permissions set
@@ -127,7 +127,7 @@ fn create_role_should_fail_with_a_few_roles_no_permission() {
         assert_noop!(
             _create_role(
                 Some(Origin::signed(ACCOUNT2)),
-                None, // On SpaceId 1
+                None, // On StorefrontId 1
                 None, // Without time_to_live
                 None, // With default content
                 Some(self::permission_set_random())
@@ -149,7 +149,7 @@ fn update_role_should_work() {
         let role = Roles::role_by_id(ROLE1).unwrap();
 
         assert!(role.updated.is_some());
-        assert_eq!(role.space_id, SPACE1);
+        assert_eq!(role.storefront_id, SPACE1);
         assert_eq!(role.disabled, true);
         assert_eq!(role.content, self::updated_role_content_ipfs());
         assert_eq!(
@@ -181,7 +181,7 @@ fn update_role_should_work_with_empty_perms_provided_no_changes() {
         let role = Roles::role_by_id(ROLE1).unwrap();
 
         assert!(role.updated.is_some());
-        assert_eq!(role.space_id, SPACE1);
+        assert_eq!(role.storefront_id, SPACE1);
         assert_eq!(role.disabled, true);
         assert_eq!(role.content, self::default_role_content_ipfs());
         assert_eq!(
@@ -244,7 +244,7 @@ fn update_role_should_work_with_a_few_roles() {
         let role = Roles::role_by_id(ROLE1).unwrap();
 
         assert!(role.updated.is_some());
-        assert_eq!(role.space_id, SPACE1);
+        assert_eq!(role.storefront_id, SPACE1);
         assert_eq!(role.disabled, false);
         assert_eq!(role.content, self::default_role_content_ipfs());
         assert_eq!(
@@ -279,7 +279,7 @@ fn update_role_should_work_not_updated_all_the_same() {
         let role = Roles::role_by_id(ROLE1).unwrap();
 
         assert!(role.updated.is_none());
-        assert_eq!(role.space_id, SPACE1);
+        assert_eq!(role.storefront_id, SPACE1);
         assert_eq!(role.disabled, false);
         assert_eq!(role.content, self::default_role_content_ipfs());
         assert_eq!(
@@ -362,7 +362,7 @@ fn grant_role_should_work() {
 
         // Change whether data was stored correctly
         assert_eq!(Roles::users_by_role_id(ROLE1), vec![user.clone()]);
-        assert_eq!(Roles::role_ids_by_user_in_space((user, SPACE1)), vec![ROLE1]);
+        assert_eq!(Roles::role_ids_by_user_in_storefront((user, SPACE1)), vec![ROLE1]);
     });
 }
 
@@ -380,7 +380,7 @@ fn grant_role_should_work_with_a_few_roles() {
 
         // Check whether data is stored correctly
         assert_eq!(Roles::users_by_role_id(ROLE1), vec![User::Account(ACCOUNT2), User::Account(ACCOUNT3)]);
-        assert_eq!(Roles::role_ids_by_user_in_space((user, SPACE1)), vec![ROLE1]);
+        assert_eq!(Roles::role_ids_by_user_in_storefront((user, SPACE1)), vec![ROLE1]);
     });
 }
 
@@ -444,7 +444,7 @@ fn revoke_role_should_work() {
 
         // Change whether data was stored correctly
         assert!(Roles::users_by_role_id(ROLE1).is_empty());
-        assert!(Roles::role_ids_by_user_in_space((user, SPACE1)).is_empty());
+        assert!(Roles::role_ids_by_user_in_storefront((user, SPACE1)).is_empty());
     });
 }
 
@@ -462,7 +462,7 @@ fn revoke_role_should_work_with_a_few_roles() {
 
         // Check whether data is stored correctly
         assert!(Roles::users_by_role_id(ROLE1).is_empty());
-        assert!(Roles::role_ids_by_user_in_space((user, SPACE1)).is_empty());
+        assert!(Roles::role_ids_by_user_in_storefront((user, SPACE1)).is_empty());
     });
 }
 
@@ -520,8 +520,8 @@ fn delete_role_should_work() {
         // Check whether storages are cleaned up
         assert!(Roles::role_by_id(ROLE1).is_none());
         assert!(Roles::users_by_role_id(ROLE1).is_empty());
-        assert!(Roles::role_ids_by_space_id(SPACE1).is_empty());
-        assert!(Roles::role_ids_by_user_in_space((User::Account(ACCOUNT2), SPACE1)).is_empty());
+        assert!(Roles::role_ids_by_storefront_id(SPACE1).is_empty());
+        assert!(Roles::role_ids_by_user_in_storefront((User::Account(ACCOUNT2), SPACE1)).is_empty());
         assert_eq!(Roles::next_role_id(), ROLE2);
     });
 }
@@ -539,8 +539,8 @@ fn delete_role_should_work_with_a_few_roles() {
         // Check whether storages are cleaned up
         assert!(Roles::role_by_id(ROLE1).is_none());
         assert!(Roles::users_by_role_id(ROLE1).is_empty());
-        assert_eq!(Roles::role_ids_by_space_id(SPACE1), vec![ROLE2]);
-        assert_eq!(Roles::role_ids_by_user_in_space((User::Account(ACCOUNT2), SPACE1)), vec![ROLE2]);
+        assert_eq!(Roles::role_ids_by_storefront_id(SPACE1), vec![ROLE2]);
+        assert_eq!(Roles::role_ids_by_user_in_storefront((User::Account(ACCOUNT2), SPACE1)), vec![ROLE2]);
         assert_eq!(Roles::next_role_id(), ROLE3);
     });
 }

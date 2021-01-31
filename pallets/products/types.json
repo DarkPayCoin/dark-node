@@ -1,0 +1,45 @@
+{
+  "ProductId": "u64",
+
+  "Product": {
+    "id": "ProductId",
+    "created": "WhoAndWhen",
+    "updated": "Option<WhoAndWhen>",
+
+    "owner": "AccountId",
+
+    "extension": "ProductExtension",
+
+    "storefront_id": "Option<StorefrontId>",
+    "content": "Content",
+    "hidden": "bool",
+
+    "replies_count": "u16",
+    "hidden_replies_count": "u16",
+
+    "shares_count": "u16",
+    "upvotes_count": "u16",
+    "downvotes_count": "u16",
+
+    "score": "i32"
+  },
+
+  "ProductUpdate": {
+    "storefront_id": "Option<StorefrontId>",
+    "content": "Option<Content>",
+    "hidden": "Option<bool>"
+  },
+
+  "ProductExtension": {
+    "_enum": {
+      "RegularProduct": "Null",
+      "Comment": "Comment",
+      "SharedProduct": "ProductId"
+    }
+  },
+
+  "Comment": {
+    "parent_id": "Option<ProductId>",
+    "root_product_id": "ProductId"
+  }
+}

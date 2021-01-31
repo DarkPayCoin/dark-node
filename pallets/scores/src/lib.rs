@@ -9,24 +9,24 @@ use sp_runtime::RuntimeDebug;
 use sp_std::prelude::*;
 use frame_system::{self as system};
 
-use pallet_posts::{PostScores, Post, PostById, PostExtension, PostId};
+use pallet_products::{ProductScores, Product, ProductById, ProductExtension, ProductId};
 use pallet_profile_follows::{BeforeAccountFollowed, BeforeAccountUnfollowed};
 use pallet_profiles::{Module as Profiles, SocialAccountById};
-use pallet_reactions::{PostReactionScores, ReactionKind};
-use pallet_space_follows::{BeforeSpaceFollowed, BeforeSpaceUnfollowed};
-use pallet_spaces::{Space, SpaceById};
+use pallet_reactions::{ProductReactionScores, ReactionKind};
+use pallet_storefront_follows::{BeforeStorefrontFollowed, BeforeStorefrontUnfollowed};
+use pallet_storefronts::{Storefront, StorefrontById};
 use pallet_utils::log_2;
 
 #[derive(Encode, Decode, Clone, Copy, Eq, PartialEq, RuntimeDebug)]
 pub enum ScoringAction {
-    UpvotePost,
-    DownvotePost,
-    SharePost,
+    UpvoteProduct,
+    DownvoteProduct,
+    ShareProduct,
     CreateComment,
     UpvoteComment,
     DownvoteComment,
     ShareComment,
-    FollowSpace,
+    FollowStorefront,
     FollowAccount,
 }
 
@@ -41,21 +41,21 @@ pub trait Trait: system::Trait
     + pallet_utils::Trait
     + pallet_profiles::Trait
     + pallet_profile_follows::Trait
-    + pallet_posts::Trait
-    + pallet_spaces::Trait
-    + pallet_space_follows::Trait
+    + pallet_products::Trait
+    + pallet_storefronts::Trait
+    + pallet_storefront_follows::Trait
     + pallet_reactions::Trait
 {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     // Weights of the social actions
-    type FollowSpaceActionWeight: Get<i16>;
+    type FollowStorefrontActionWeight: Get<i16>;
     type FollowAccountActionWeight: Get<i16>;
 
-    type SharePostActionWeight: Get<i16>;
-    type UpvotePostActionWeight: Get<i16>;
-    type DownvotePostActionWeight: Get<i16>;
+    type ShareProductActionWeight: Get<i16>;
+    type UpvoteProductActionWeight: Get<i16>;
+    type DownvoteProductActionWeight: Get<i16>;
 
     type CreateCommentActionWeight: Get<i16>;
     type ShareCommentActionWeight: Get<i16>;
@@ -67,9 +67,9 @@ decl_error! {
     pub enum Error for Module<T: Trait> {
         /// Scored account reputation difference by account and action not found.
         ReputationDiffNotFound,
-        /// Post extension is a comment.
-        NotRootPost,
-        /// Post extension is not a comment.
+        /// Product extension is a comment.
+        NotRootProduct,
+        /// Product extension is not a comment.
         NotComment,
     }
 }
@@ -82,8 +82,8 @@ decl_storage! {
         pub AccountReputationDiffByAccount get(fn account_reputation_diff_by_account):
             map hasher(blake2_128_concat) (/* actor */ T::AccountId, /* subject */ T::AccountId, ScoringAction) => Option<i16>;
 
-        pub PostScoreByAccount get(fn post_score_by_account):
-            map hasher(blake2_128_concat) (/* actor */ T::AccountId, /* subject */ PostId, ScoringAction) => Option<i16>;
+        pub ProductScoreByAccount get(fn product_score_by_account):
+            map hasher(blake2_128_concat) (/* actor */ T::AccountId, /* subject */ ProductId, ScoringAction) => Option<i16>;
     }
 }
 
@@ -100,11 +100,11 @@ decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
 
         /// Weights of the related social account actions
-        const FollowSpaceActionWeight: i16 = T::FollowSpaceActionWeight::get();
+        const FollowStorefrontActionWeight: i16 = T::FollowStorefrontActionWeight::get();
         const FollowAccountActionWeight: i16 = T::FollowAccountActionWeight::get();
-        const UpvotePostActionWeight: i16 = T::UpvotePostActionWeight::get();
-        const DownvotePostActionWeight: i16 = T::DownvotePostActionWeight::get();
-        const SharePostActionWeight: i16 = T::SharePostActionWeight::get();
+        const UpvoteProductActionWeight: i16 = T::UpvoteProductActionWeight::get();
+        const DownvoteProductActionWeight: i16 = T::DownvoteProductActionWeight::get();
+        const ShareProductActionWeight: i16 = T::ShareProductActionWeight::get();
         const CreateCommentActionWeight: i16 = T::CreateCommentActionWeight::get();
         const UpvoteCommentActionWeight: i16 = T::UpvoteCommentActionWeight::get();
         const DownvoteCommentActionWeight: i16 = T::DownvoteCommentActionWeight::get();
@@ -120,114 +120,114 @@ decl_module! {
 
 impl<T: Trait> Module<T> {
 
-    pub fn scoring_action_by_post_extension(
-        extension: PostExtension,
+    pub fn scoring_action_by_product_extension(
+        extension: ProductExtension,
         reaction_kind: ReactionKind,
     ) -> ScoringAction {
         match extension {
-            PostExtension::RegularPost | PostExtension::SharedPost(_) => match reaction_kind {
-                ReactionKind::Upvote => ScoringAction::UpvotePost,
-                ReactionKind::Downvote => ScoringAction::DownvotePost,
+            ProductExtension::RegularProduct | ProductExtension::SharedProduct(_) => match reaction_kind {
+                ReactionKind::Upvote => ScoringAction::UpvoteProduct,
+                ReactionKind::Downvote => ScoringAction::DownvoteProduct,
             },
-            PostExtension::Comment(_) => match reaction_kind {
+            ProductExtension::Comment(_) => match reaction_kind {
                 ReactionKind::Upvote => ScoringAction::UpvoteComment,
                 ReactionKind::Downvote => ScoringAction::DownvoteComment,
             },
         }
     }
 
-    fn change_post_score_with_reaction(
+    fn change_product_score_with_reaction(
         actor: T::AccountId,
-        post: &mut Post<T>,
+        product: &mut Product<T>,
         reaction_kind: ReactionKind,
     ) -> DispatchResult {
 
-        // Post owner should not be able to change the score of their post.
-        if post.is_owner(&actor) {
+        // Product owner should not be able to change the score of their product.
+        if product.is_owner(&actor) {
             return Ok(())
         }
 
-        let action = Self::scoring_action_by_post_extension(post.extension, reaction_kind);
-        Self::change_post_score(actor, post, action)
+        let action = Self::scoring_action_by_product_extension(product.extension, reaction_kind);
+        Self::change_product_score(actor, product, action)
     }
 
-    pub fn change_post_score(
+    pub fn change_product_score(
         account: T::AccountId,
-        post: &mut Post<T>,
+        product: &mut Product<T>,
         action: ScoringAction,
     ) -> DispatchResult {
-        if post.is_comment() {
-            Self::change_comment_score(account, post, action)
+        if product.is_comment() {
+            Self::change_comment_score(account, product, action)
         } else {
-            Self::change_root_post_score(account, post, action)
+            Self::change_root_product_score(account, product, action)
         }
     }
 
-    fn change_root_post_score(
+    fn change_root_product_score(
         account: T::AccountId,
-        post: &mut Post<T>,
+        product: &mut Product<T>,
         action: ScoringAction,
     ) -> DispatchResult {
-        ensure!(post.is_root_post(), Error::<T>::NotRootPost);
+        ensure!(product.is_root_product(), Error::<T>::NotRootProduct);
 
         let social_account = Profiles::get_or_new_social_account(account.clone());
 
         // TODO inspect: this insert could be redundant if the account already exists.
         <SocialAccountById<T>>::insert(account.clone(), social_account.clone());
 
-        let post_id = post.id;
+        let product_id = product.id;
 
-        // TODO inspect: maybe this check is redundant such as we use change_root_post_score() internally and post was already loaded.
-        // Posts::<T>::ensure_post_exists(post_id)?;
+        // TODO inspect: maybe this check is redundant such as we use change_root_product_score() internally and product was already loaded.
+        // Products::<T>::ensure_product_exists(product_id)?;
 
-        // Post owner should not have any impact on their post score.
-        if post.is_owner(&account) {
+        // Product owner should not have any impact on their product score.
+        if product.is_owner(&account) {
             return Ok(())
         }
 
-        let mut space = post.get_space()?;
+        let mut storefront = product.get_storefront()?;
 
-        if let Some(score_diff) = Self::post_score_by_account((account.clone(), post_id, action)) {
-            let reputation_diff = Self::account_reputation_diff_by_account((account.clone(), post.owner.clone(), action))
+        if let Some(score_diff) = Self::product_score_by_account((account.clone(), product_id, action)) {
+            let reputation_diff = Self::account_reputation_diff_by_account((account.clone(), product.owner.clone(), action))
                 .ok_or(Error::<T>::ReputationDiffNotFound)?;
 
             // Revert this score diff:
-            post.change_score(-score_diff);
-            space.change_score(-score_diff);
-            Self::change_social_account_reputation(post.owner.clone(), account.clone(), -reputation_diff, action)?;
-            <PostScoreByAccount<T>>::remove((account, post_id, action));
+            product.change_score(-score_diff);
+            storefront.change_score(-score_diff);
+            Self::change_social_account_reputation(product.owner.clone(), account.clone(), -reputation_diff, action)?;
+            <ProductScoreByAccount<T>>::remove((account, product_id, action));
         } else {
             match action {
-                ScoringAction::UpvotePost => {
-                    if Self::post_score_by_account((account.clone(), post_id, ScoringAction::DownvotePost)).is_some() {
+                ScoringAction::UpvoteProduct => {
+                    if Self::product_score_by_account((account.clone(), product_id, ScoringAction::DownvoteProduct)).is_some() {
                         // TODO inspect this recursion. Doesn't look good:
-                        Self::change_root_post_score(account.clone(), post, ScoringAction::DownvotePost)?;
+                        Self::change_root_product_score(account.clone(), product, ScoringAction::DownvoteProduct)?;
                     }
                 }
-                ScoringAction::DownvotePost => {
-                    if Self::post_score_by_account((account.clone(), post_id, ScoringAction::UpvotePost)).is_some() {
+                ScoringAction::DownvoteProduct => {
+                    if Self::product_score_by_account((account.clone(), product_id, ScoringAction::UpvoteProduct)).is_some() {
                         // TODO inspect this recursion. Doesn't look good:
-                        Self::change_root_post_score(account.clone(), post, ScoringAction::UpvotePost)?;
+                        Self::change_root_product_score(account.clone(), product, ScoringAction::UpvoteProduct)?;
                     }
                 }
                 _ => (),
             }
             let score_diff = Self::score_diff_for_action(social_account.reputation, action);
-            post.change_score(score_diff);
-            space.change_score(score_diff);
-            Self::change_social_account_reputation(post.owner.clone(), account.clone(), score_diff, action)?;
-            <PostScoreByAccount<T>>::insert((account, post_id, action), score_diff);
+            product.change_score(score_diff);
+            storefront.change_score(score_diff);
+            Self::change_social_account_reputation(product.owner.clone(), account.clone(), score_diff, action)?;
+            <ProductScoreByAccount<T>>::insert((account, product_id, action), score_diff);
         }
 
-        <PostById<T>>::insert(post_id, post.clone());
-        <SpaceById<T>>::insert(space.id, space);
+        <ProductById<T>>::insert(product_id, product.clone());
+        <StorefrontById<T>>::insert(storefront.id, storefront);
 
         Ok(())
     }
 
     fn change_comment_score(
         account: T::AccountId,
-        comment: &mut Post<T>,
+        comment: &mut Product<T>,
         action: ScoringAction,
     ) -> DispatchResult {
         ensure!(comment.is_comment(), Error::<T>::NotComment);
@@ -240,45 +240,45 @@ impl<T: Trait> Module<T> {
         let comment_id = comment.id;
 
         // TODO inspect: maybe this check is redundant such as we use change_comment_score() internally and comment was already loaded.
-        // Posts::<T>::ensure_post_exists(comment_id)?;
+        // Products::<T>::ensure_product_exists(comment_id)?;
 
         // Comment owner should not have any impact on their comment score.
         if comment.is_owner(&account) {
             return Ok(())
         }
 
-        if let Some(score_diff) = Self::post_score_by_account((account.clone(), comment_id, action)) {
+        if let Some(score_diff) = Self::product_score_by_account((account.clone(), comment_id, action)) {
             let reputation_diff = Self::account_reputation_diff_by_account((account.clone(), comment.owner.clone(), action))
                 .ok_or(Error::<T>::ReputationDiffNotFound)?;
 
             // Revert this score diff:
             comment.change_score(-score_diff);
             Self::change_social_account_reputation(comment.owner.clone(), account.clone(), -reputation_diff, action)?;
-            <PostScoreByAccount<T>>::remove((account, comment_id, action));
+            <ProductScoreByAccount<T>>::remove((account, comment_id, action));
         } else {
             match action {
                 ScoringAction::UpvoteComment => {
-                    if Self::post_score_by_account((account.clone(), comment_id, ScoringAction::DownvoteComment)).is_some() {
+                    if Self::product_score_by_account((account.clone(), comment_id, ScoringAction::DownvoteComment)).is_some() {
                         Self::change_comment_score(account.clone(), comment, ScoringAction::DownvoteComment)?;
                     }
                 }
                 ScoringAction::DownvoteComment => {
-                    if Self::post_score_by_account((account.clone(), comment_id, ScoringAction::UpvoteComment)).is_some() {
+                    if Self::product_score_by_account((account.clone(), comment_id, ScoringAction::UpvoteComment)).is_some() {
                         Self::change_comment_score(account.clone(), comment, ScoringAction::UpvoteComment)?;
                     }
                 }
                 ScoringAction::CreateComment => {
-                    let root_post = &mut comment.get_root_post()?;
-                    Self::change_root_post_score(account.clone(), root_post, action)?;
+                    let root_product = &mut comment.get_root_product()?;
+                    Self::change_root_product_score(account.clone(), root_product, action)?;
                 }
                 _ => (),
             }
             let score_diff = Self::score_diff_for_action(social_account.reputation, action);
             comment.change_score(score_diff);
             Self::change_social_account_reputation(comment.owner.clone(), account.clone(), score_diff, action)?;
-            <PostScoreByAccount<T>>::insert((account, comment_id, action), score_diff);
+            <ProductScoreByAccount<T>>::insert((account, comment_id, action), score_diff);
         }
-        <PostById<T>>::insert(comment_id, comment.clone());
+        <ProductById<T>>::insert(comment_id, comment.clone());
 
         Ok(())
     }
@@ -333,47 +333,47 @@ impl<T: Trait> Module<T> {
     fn weight_of_scoring_action(action: ScoringAction) -> i16 {
         use ScoringAction::*;
         match action {
-            UpvotePost => T::UpvotePostActionWeight::get(),
-            DownvotePost => T::DownvotePostActionWeight::get(),
-            SharePost => T::SharePostActionWeight::get(),
+            UpvoteProduct => T::UpvoteProductActionWeight::get(),
+            DownvoteProduct => T::DownvoteProductActionWeight::get(),
+            ShareProduct => T::ShareProductActionWeight::get(),
             CreateComment => T::CreateCommentActionWeight::get(),
             UpvoteComment => T::UpvoteCommentActionWeight::get(),
             DownvoteComment => T::DownvoteCommentActionWeight::get(),
             ShareComment => T::ShareCommentActionWeight::get(),
-            FollowSpace => T::FollowSpaceActionWeight::get(),
+            FollowStorefront => T::FollowStorefrontActionWeight::get(),
             FollowAccount => T::FollowAccountActionWeight::get(),
         }
     }
 }
 
-impl<T: Trait> BeforeSpaceFollowed<T> for Module<T> {
-    fn before_space_followed(follower: T::AccountId, follower_reputation: u32, space: &mut Space<T>) -> DispatchResult {
-        // Change a space score only if the follower is NOT a space owner.
-        if !space.is_owner(&follower) {
-            let space_owner = space.owner.clone();
-            let action = ScoringAction::FollowSpace;
+impl<T: Trait> BeforeStorefrontFollowed<T> for Module<T> {
+    fn before_storefront_followed(follower: T::AccountId, follower_reputation: u32, storefront: &mut Storefront<T>) -> DispatchResult {
+        // Change a storefront score only if the follower is NOT a storefront owner.
+        if !storefront.is_owner(&follower) {
+            let storefront_owner = storefront.owner.clone();
+            let action = ScoringAction::FollowStorefront;
             let score_diff = Self::score_diff_for_action(follower_reputation, action);
-            space.change_score(score_diff);
+            storefront.change_score(score_diff);
             return Self::change_social_account_reputation(
-                space_owner, follower, score_diff, action)
+                storefront_owner, follower, score_diff, action)
         }
         Ok(())
     }
 }
 
-impl<T: Trait> BeforeSpaceUnfollowed<T> for Module<T> {
-    fn before_space_unfollowed(follower: T::AccountId, space: &mut Space<T>) -> DispatchResult {
-        // Change a space score only if the follower is NOT a space owner.
-        if !space.is_owner(&follower) {
-            let space_owner = space.owner.clone();
-            let action = ScoringAction::FollowSpace;
+impl<T: Trait> BeforeStorefrontUnfollowed<T> for Module<T> {
+    fn before_storefront_unfollowed(follower: T::AccountId, storefront: &mut Storefront<T>) -> DispatchResult {
+        // Change a storefront score only if the follower is NOT a storefront owner.
+        if !storefront.is_owner(&follower) {
+            let storefront_owner = storefront.owner.clone();
+            let action = ScoringAction::FollowStorefront;
             if let Some(score_diff) = Self::account_reputation_diff_by_account(
-                (follower.clone(), space_owner.clone(), action)
+                (follower.clone(), storefront_owner.clone(), action)
             ) {
-                // Subtract a score diff that was added when this user followed this space in the past:
-                space.change_score(-score_diff);
+                // Subtract a score diff that was added when this user followed this storefront in the past:
+                storefront.change_score(-score_diff);
                 return Self::change_social_account_reputation(
-                    space_owner, follower, -score_diff, action)
+                    storefront_owner, follower, -score_diff, action)
             }
         }
         Ok(())
@@ -400,37 +400,37 @@ impl<T: Trait> BeforeAccountUnfollowed<T> for Module<T> {
     }
 }
 
-impl<T: Trait> PostScores<T> for Module<T> {
-    fn score_post_on_new_share(account: T::AccountId, original_post: &mut Post<T>) -> DispatchResult {
+impl<T: Trait> ProductScores<T> for Module<T> {
+    fn score_product_on_new_share(account: T::AccountId, original_product: &mut Product<T>) -> DispatchResult {
         let action =
-            if original_post.is_comment() { ScoringAction::ShareComment }
-            else { ScoringAction::SharePost };
+            if original_product.is_comment() { ScoringAction::ShareComment }
+            else { ScoringAction::ShareProduct };
 
-        let account_never_shared_this_post =
-            Self::post_score_by_account(
-                (account.clone(), original_post.id, action)
+        let account_never_shared_this_product =
+            Self::product_score_by_account(
+                (account.clone(), original_product.id, action)
             ).is_none();
 
-        // It makes sense to change a score of this post only once:
+        // It makes sense to change a score of this product only once:
         // i.e. when this account sharing it for the first time.
-        if account_never_shared_this_post {
-            Self::change_post_score(account, original_post, action)
+        if account_never_shared_this_product {
+            Self::change_product_score(account, original_product, action)
         } else {
             Ok(())
         }
     }
 
-    fn score_root_post_on_new_comment(account: T::AccountId, root_post: &mut Post<T>) -> DispatchResult {
-        Self::change_post_score(account, root_post, ScoringAction::CreateComment)
+    fn score_root_product_on_new_comment(account: T::AccountId, root_product: &mut Product<T>) -> DispatchResult {
+        Self::change_product_score(account, root_product, ScoringAction::CreateComment)
     }
 }
 
-impl<T: Trait> PostReactionScores<T> for Module<T> {
-    fn score_post_on_reaction(
+impl<T: Trait> ProductReactionScores<T> for Module<T> {
+    fn score_product_on_reaction(
         actor: T::AccountId,
-        post: &mut Post<T>,
+        product: &mut Product<T>,
         reaction_kind: ReactionKind,
     ) -> DispatchResult {
-        Self::change_post_score_with_reaction(actor, post, reaction_kind)
+        Self::change_product_score_with_reaction(actor, product, reaction_kind)
     }
 }

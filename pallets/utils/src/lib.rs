@@ -5,7 +5,7 @@ use frame_support::{
     decl_error, decl_module, decl_storage, decl_event,
     dispatch::{DispatchError, DispatchResult}, ensure,
     traits::{
-        Currency, Get,
+        Currency, ReservableCurrency, Get,
         Imbalance, OnUnbalanced,
     },
 };
@@ -22,7 +22,7 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
-pub type SpaceId = u64;
+pub type StorefrontId = u64;
 
 #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug)]
 pub struct WhoAndWhen<T: Trait> {
@@ -44,7 +44,7 @@ impl<T: Trait> WhoAndWhen<T> {
 #[derive(Encode, Decode, Ord, PartialOrd, Clone, Eq, PartialEq, RuntimeDebug)]
 pub enum User<AccountId> {
     Account(AccountId),
-    Space(SpaceId),
+    Storefront(StorefrontId),
 }
 
 #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug)]
@@ -71,12 +71,13 @@ pub trait Trait: system::Trait + pallet_timestamp::Trait
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     /// The currency mechanism.
-    type Currency: Currency<Self::AccountId>;
+    //type Currency: Currency<Self::AccountId>;
+    type Currency: Currency<Self::AccountId> + ReservableCurrency<Self::AccountId>;
 
-    /// Minimal length of space/profile handle
+    /// Minimal length of storefront/profile handle
     type MinHandleLen: Get<u32>;
 
-    /// Maximal length of space/profile handle
+    /// Maximal length of storefront/profile handle
     type MaxHandleLen: Get<u32>;
 }
 
@@ -99,10 +100,10 @@ decl_storage! {
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
 
-        /// Minimal length of space/profile handle
+        /// Minimal length of storefront/profile handle
         const MinHandleLen: u32 = T::MinHandleLen::get();
 
-        /// Maximal length of space/profile handle
+        /// Maximal length of storefront/profile handle
         const MaxHandleLen: u32 = T::MaxHandleLen::get();
 
         // Initializing errors
@@ -121,11 +122,11 @@ decl_error! {
         RawContentTypeNotSupported,
         /// Unsupported yet type of content 'Hyper' is used
         HypercoreContentTypeNotSupported,
-        /// Space handle is too short.
+        /// Storefront handle is too short.
         HandleIsTooShort,
-        /// Space handle is too long.
+        /// Storefront handle is too long.
         HandleIsTooLong,
-        /// Space handle contains invalid characters.
+        /// Storefront handle contains invalid characters.
         HandleContainsInvalidChars,
         /// Content type is `None`
         ContentIsEmpty,
@@ -201,7 +202,7 @@ impl<T: Trait> Module<T> {
     /// Check if a handle length fits into min/max values.
     /// Lowercase a provided handle.
     /// Check if a handle consists of valid chars: 0-9, a-z, _.
-    /// Check if a handle is unique across all spaces' handles (required one a storage read).
+    /// Check if a handle is unique across all storefronts' handles (required one a storage read).
     pub fn lowercase_and_validate_a_handle(handle: Vec<u8>) -> Result<Vec<u8>, DispatchError> {
         // Check min and max lengths of a handle:
         ensure!(handle.len() >= T::MinHandleLen::get() as usize, Error::<T>::HandleIsTooShort);
@@ -218,6 +219,10 @@ impl<T: Trait> Module<T> {
     pub fn ensure_content_is_some(content: &Content) -> DispatchResult {
         ensure!(!content.is_none(), Error::<T>::ContentIsEmpty);
         Ok(())
+    }
+
+    pub fn u32_to_balance(input: u32) -> BalanceOf<T> {
+        input.into()
     }
 }
 

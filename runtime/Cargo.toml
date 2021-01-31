@@ -29,19 +29,23 @@ std = [
     'pallet-scheduler/std',
     'pallet-utility/std',
     'pallet-permissions/std',
-    'pallet-posts/std',
-    'pallet-post-history/std',
+    'pallet-products/std',
+    'pallet-product-history/std',
     'pallet-profiles/std',
     'pallet-profile-follows/std',
     'pallet-profile-history/std',
     'pallet-reactions/std',
     'pallet-roles/std',
     'pallet-scores/std',
-    'pallet-spaces/std',
-    'pallet-space-follows/std',
-    'pallet-space-ownership/std',
-    'pallet-space-history/std',
+    'pallet-storefronts/std',
+    'pallet-storefront-follows/std',
+    'pallet-storefront-ownership/std',
+    'pallet-storefront-history/std',
     'pallet-utils/std',
+    'pallet-orders/std',
+    'pallet-order-history/std',
+    'pallet-ocw/std',
+
 ]
 
 [dependencies.aura]
@@ -225,14 +229,14 @@ default-features = false
 path = '../pallets/permissions'
 version = '0.4.0'
 
-[dependencies.pallet-posts]
+[dependencies.pallet-products]
 default-features = false
-path = '../pallets/posts'
+path = '../pallets/products'
 version = '0.4.0'
 
-[dependencies.pallet-post-history]
+[dependencies.pallet-product-history]
 default-features = false
-path = '../pallets/post-history'
+path = '../pallets/product-history'
 version = '0.4.0'
 
 [dependencies.pallet-profiles]
@@ -265,29 +269,44 @@ default-features = false
 path = '../pallets/scores'
 version = '0.4.0'
 
-[dependencies.pallet-spaces]
+[dependencies.pallet-storefronts]
 default-features = false
-path = '../pallets/spaces'
+path = '../pallets/storefronts'
 version = '0.4.0'
 
-[dependencies.pallet-space-follows]
+[dependencies.pallet-storefront-follows]
 default-features = false
-path = '../pallets/space-follows'
+path = '../pallets/storefront-follows'
 version = '0.4.0'
 
-[dependencies.pallet-space-ownership]
+[dependencies.pallet-storefront-ownership]
 default-features = false
-path = '../pallets/space-ownership'
+path = '../pallets/storefront-ownership'
 version = '0.4.0'
 
-[dependencies.pallet-space-history]
+[dependencies.pallet-storefront-history]
 default-features = false
-path = '../pallets/space-history'
+path = '../pallets/storefront-history'
 version = '0.4.0'
 
 [dependencies.pallet-utils]
 default-features = false
 path = '../pallets/utils'
+version = '0.4.0'
+
+[dependencies.pallet-orders]
+default-features = false
+path = '../pallets/orders'
+version = '0.4.0'
+
+[dependencies.pallet-order-history]
+default-features = false
+path = '../pallets/order-history'
+version = '0.4.0'
+
+[dependencies.pallet-ocw]
+default-features = false
+path = '../pallets/ocw'
 version = '0.4.0'
 
 # [dependencies.session-keys]
@@ -297,14 +316,14 @@ version = '0.4.0'
 # version = '0.4.0'
 
 [package]
-name = 'subsocial-runtime'
+name = 'dark-runtime'
 version = '0.4.0'
-authors = ['DappForce <dappforce@pm.me>']
+authors = ['DarkDot <admin@darkdot.network>']
 edition = '2018'
 license = 'GPL-3.0-only'
-homepage = 'https://subsocial.network'
-repository = 'https://github.com/dappforce/dappforce-subsocial-node'
-description = 'Subsocial runtime'
+homepage = 'https://darkdot.network'
+repository = 'https://github.com/DarkPayCoin/substrate-dark-node'
+description = 'Darkdot runtime'
 keywords = ['blockchain', 'cryptocurrency', 'social-network', 'news-feed', 'marketplace']
 categories = ['cryptography::cryptocurrencies']
 [package.metadata.docs.rs]

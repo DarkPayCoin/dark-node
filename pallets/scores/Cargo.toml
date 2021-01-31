@@ -1,12 +1,20 @@
+#####################################################################
+#                                                                   #
+#   This project is a fork of great Subsocial project.              #
+#   Please visit, share and love https://subsocial.network/         #
+#   Orginal code : https://github.com/dappforce                     #
+#                                                                   #
+#####################################################################
+
 [package]
 name = 'pallet-scores'
 version = '0.4.0'
-authors = ['DappForce <dappforce@pm.me>']
+authors = ['DarkDot <admin@darkdot.network>']
 edition = '2018'
 license = 'GPL-3.0-only'
-homepage = 'https://subsocial.network'
-repository = 'https://github.com/dappforce/dappforce-subsocial-node'
-description = 'Pallet to update scores of spaces, posts, comments and accounts (profiles)'
+homepage = 'https://darkdot.network'
+repository = 'https://github.com/DarkPayCoin/substrate-dark-node'
+description = 'Pallet to update scores of storefronts, products, comments and accounts (profiles)'
 keywords = ['blockchain', 'cryptocurrency', 'social-network', 'news-feed', 'marketplace']
 categories = ['cryptography::cryptocurrencies']
 
@@ -21,9 +29,9 @@ std = [
     'pallet-utils/std',
     'pallet-profiles/std',
     'pallet-profile-follows/std',
-    'pallet-posts/std',
-    'pallet-spaces/std',
-    'pallet-space-follows/std',
+    'pallet-products/std',
+    'pallet-storefronts/std',
+    'pallet-storefront-follows/std',
     'pallet-reactions/std',
 ]
 
@@ -72,19 +80,19 @@ default-features = false
 path = '../profile-follows'
 version = '0.4.0'
 
-[dependencies.pallet-posts]
+[dependencies.pallet-products]
 default-features = false
-path = '../posts'
+path = '../products'
 version = '0.4.0'
 
-[dependencies.pallet-spaces]
+[dependencies.pallet-storefronts]
 default-features = false
-path = '../spaces'
+path = '../storefronts'
 version = '0.4.0'
 
-[dependencies.pallet-space-follows]
+[dependencies.pallet-storefront-follows]
 default-features = false
-path = '../space-follows'
+path = '../storefront-follows'
 version = '0.4.0'
 
 [dependencies.pallet-reactions]

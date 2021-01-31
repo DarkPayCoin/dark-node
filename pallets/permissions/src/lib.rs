@@ -12,42 +12,42 @@ use sp_std::{
 };
 use frame_system::{self as system};
 
-use pallet_utils::SpaceId;
+use pallet_utils::StorefrontId;
 
 #[derive(Encode, Decode, Ord, PartialOrd, Clone, Eq, PartialEq, RuntimeDebug)]
-pub enum SpacePermission {
-  /// Create, update, delete, grant and revoke roles in this space.
+pub enum StorefrontPermission {
+  /// Create, update, delete, grant and revoke roles in this storefront.
   ManageRoles,
 
-  /// Act on behalf of this space within this space.
-  RepresentSpaceInternally,
-  /// Act on behalf of this space outside of this space.
-  RepresentSpaceExternally,
+  /// Act on behalf of this storefront within this storefront.
+  RepresentStorefrontInternally,
+  /// Act on behalf of this storefront outside of this storefront.
+  RepresentStorefrontExternally,
 
-  /// Update this space.
-  UpdateSpace,
+  /// Update this storefront.
+  UpdateStorefront,
 
-  // Related to subspaces in this space:
-  CreateSubspaces,
-  UpdateOwnSubspaces,
-  DeleteOwnSubspaces,
-  HideOwnSubspaces,
+  // Related to substorefronts in this storefront:
+  CreateSubstorefronts,
+  UpdateOwnSubstorefronts,
+  DeleteOwnSubstorefronts,
+  HideOwnSubstorefronts,
 
-  UpdateAnySubspace,
-  DeleteAnySubspace,
-  HideAnySubspace,
+  UpdateAnySubstorefront,
+  DeleteAnySubstorefront,
+  HideAnySubstorefront,
 
-  // Related to posts in this space:
-  CreatePosts,
-  UpdateOwnPosts,
-  DeleteOwnPosts,
-  HideOwnPosts,
+  // Related to products in this storefront:
+  CreateProducts,
+  UpdateOwnProducts,
+  DeleteOwnProducts,
+  HideOwnProducts,
 
-  UpdateAnyPost,
-  DeleteAnyPost,
-  HideAnyPost,
+  UpdateAnyProduct,
+  DeleteAnyProduct,
+  HideAnyProduct,
 
-  // Related to comments in this space:
+  // Related to comments in this storefront:
   CreateComments,
   UpdateOwnComments,
   DeleteOwnComments,
@@ -57,71 +57,71 @@ pub enum SpacePermission {
   // Instead it's possible to allow to hide and block comments.
   HideAnyComment,
 
-  /// Upvote any post or comment in this space.
+  /// Upvote any product or comment in this storefront.
   Upvote,
-  /// Downvote any post or comment in this space.
+  /// Downvote any product or comment in this storefront.
   Downvote,
-  /// Share any post or comment from this space to another outer space.
+  /// Share any product or comment from this storefront to another outer storefront.
   Share,
 
-  /// Override permissions per subspace in this space.
-  OverrideSubspacePermissions,
-  /// Override permissions per post in this space.
-  OverridePostPermissions,
+  /// Override permissions per substorefront in this storefront.
+  OverrideSubstorefrontPermissions,
+  /// Override permissions per product in this storefront.
+  OverrideProductPermissions,
 
   // Related to moderation pallet
-  /// Suggest new entity status in space (whether it's blocked or allowed)
+  /// Suggest new entity status in storefront (whether it's blocked or allowed)
   SuggestEntityStatus,
-  /// Update entity status in space
+  /// Update entity status in storefront
   UpdateEntityStatus,
 
-  // Related to Space settings
-  /// Update collection of space settings in different pallets
-  UpdateSpaceSettings,
+  // Related to Storefront settings
+  /// Update collection of storefront settings in different pallets
+  UpdateStorefrontSettings,
 }
 
-pub type SpacePermissionSet = BTreeSet<SpacePermission>;
+pub type StorefrontPermissionSet = BTreeSet<StorefrontPermission>;
 
 #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug)]
-pub struct SpacePermissions {
-  pub none: Option<SpacePermissionSet>,
-  pub everyone: Option<SpacePermissionSet>,
-  pub follower: Option<SpacePermissionSet>,
-  pub space_owner: Option<SpacePermissionSet>,
+pub struct StorefrontPermissions {
+  pub none: Option<StorefrontPermissionSet>,
+  pub everyone: Option<StorefrontPermissionSet>,
+  pub follower: Option<StorefrontPermissionSet>,
+  pub storefront_owner: Option<StorefrontPermissionSet>,
 }
 
-impl Default for SpacePermissions {
-  fn default() -> SpacePermissions {
-    SpacePermissions {
+impl Default for StorefrontPermissions {
+  fn default() -> StorefrontPermissions {
+    StorefrontPermissions {
       none: None,
       everyone: None,
       follower: None,
-      space_owner: None,
+      storefront_owner: None,
     }
   }
 }
 
 #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug)]
-pub struct SpacePermissionsContext {
-  pub space_id: SpaceId,
-  pub is_space_owner: bool,
-  pub is_space_follower: bool,
-  pub space_perms: Option<SpacePermissions>
+pub struct StorefrontPermissionsContext {
+  pub storefront_id: StorefrontId,
+  pub is_storefront_owner: bool,
+  pub is_storefront_follower: bool,
+  pub storefront_perms: Option<StorefrontPermissions>
 }
 
 /// The pallet's configuration trait.
 pub trait Trait: system::Trait {
-  type DefaultSpacePermissions: Get<SpacePermissions>;
+  type DefaultStorefrontPermissions: Get<StorefrontPermissions>;
 }
 
 decl_module! {
   pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-    const DefaultSpacePermissions: SpacePermissions = T::DefaultSpacePermissions::get();
+    const DefaultStorefrontPermissions: StorefrontPermissions = T::DefaultStorefrontPermissions::get();
   }
 }
 
-impl SpacePermission {
-  fn is_present_in_role(&self, perms_opt: Option<SpacePermissionSet>) -> bool {
+impl StorefrontPermission {
+  fn is_present_in_role(&self, perms_opt: Option<StorefrontPermissionSet>) -> bool {
     if let Some(perms) = perms_opt {
       if perms.contains(self) {
         return true
@@ -134,9 +134,9 @@ impl SpacePermission {
 impl<T: Trait> Module<T> {
 
   fn get_overrides_or_defaults(
-    overrides: Option<SpacePermissionSet>,
-    defaults: Option<SpacePermissionSet>
-  ) -> Option<SpacePermissionSet> {
+    overrides: Option<StorefrontPermissionSet>,
+    defaults: Option<StorefrontPermissionSet>
+  ) -> Option<StorefrontPermissionSet> {
 
     if overrides.is_some() {
       overrides
@@ -145,40 +145,40 @@ impl<T: Trait> Module<T> {
     }
   }
 
-  fn resolve_space_perms(
-    space_perms: Option<SpacePermissions>,
-  ) -> SpacePermissions {
+  fn resolve_storefront_perms(
+    storefront_perms: Option<StorefrontPermissions>,
+  ) -> StorefrontPermissions {
 
-    let defaults = T::DefaultSpacePermissions::get();
-    let overrides = space_perms.unwrap_or_default();
+    let defaults = T::DefaultStorefrontPermissions::get();
+    let overrides = storefront_perms.unwrap_or_default();
 
-    SpacePermissions {
+    StorefrontPermissions {
       none: Self::get_overrides_or_defaults(overrides.none, defaults.none),
       everyone: Self::get_overrides_or_defaults(overrides.everyone, defaults.everyone),
       follower: Self::get_overrides_or_defaults(overrides.follower, defaults.follower),
-      space_owner: Self::get_overrides_or_defaults(overrides.space_owner, defaults.space_owner)
+      storefront_owner: Self::get_overrides_or_defaults(overrides.storefront_owner, defaults.storefront_owner)
     }
   }
 
-  pub fn has_user_a_space_permission(
-    ctx: SpacePermissionsContext,
-    permission: SpacePermission,
+  pub fn has_user_a_storefront_permission(
+    ctx: StorefrontPermissionsContext,
+    permission: StorefrontPermission,
   ) -> Option<bool> {
 
-    let perms_by_role = Self::resolve_space_perms(ctx.space_perms);
+    let perms_by_role = Self::resolve_storefront_perms(ctx.storefront_perms);
 
     // Check if this permission is forbidden:
     if permission.is_present_in_role(perms_by_role.none) {
       return Some(false)
     }
 
-    let is_space_owner = ctx.is_space_owner;
-    let is_follower = is_space_owner || ctx.is_space_follower;
+    let is_storefront_owner = ctx.is_storefront_owner;
+    let is_follower = is_storefront_owner || ctx.is_storefront_follower;
 
     if
       permission.is_present_in_role(perms_by_role.everyone) ||
       is_follower && permission.is_present_in_role(perms_by_role.follower) ||
-      is_space_owner && permission.is_present_in_role(perms_by_role.space_owner)
+      is_storefront_owner && permission.is_present_in_role(perms_by_role.storefront_owner)
     {
       return Some(true)
     }

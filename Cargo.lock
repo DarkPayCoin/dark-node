@@ -854,6 +854,91 @@ dependencies = [
 ]
 
 [[package]]
+name = "dark-node"
+version = "0.4.0"
+dependencies = [
+ "base64 0.12.3",
+ "dark-runtime",
+ "futures 0.3.5",
+ "hex-literal",
+ "log",
+ "parity-scale-codec",
+ "parking_lot 0.10.2",
+ "sc-basic-authorship",
+ "sc-cli",
+ "sc-client-api",
+ "sc-consensus",
+ "sc-consensus-aura",
+ "sc-executor",
+ "sc-finality-grandpa",
+ "sc-network",
+ "sc-service",
+ "sc-telemetry",
+ "sc-transaction-pool",
+ "sp-consensus",
+ "sp-consensus-aura",
+ "sp-core",
+ "sp-finality-grandpa",
+ "sp-inherents",
+ "sp-runtime",
+ "sp-transaction-pool",
+ "structopt",
+ "substrate-build-script-utils",
+]
+
+[[package]]
+name = "dark-runtime"
+version = "0.4.0"
+dependencies = [
+ "frame-executive",
+ "frame-support",
+ "frame-system",
+ "node-primitives",
+ "pallet-aura",
+ "pallet-balances",
+ "pallet-grandpa",
+ "pallet-ocw",
+ "pallet-order-history",
+ "pallet-orders",
+ "pallet-permissions",
+ "pallet-product-history",
+ "pallet-products",
+ "pallet-profile-follows",
+ "pallet-profile-history",
+ "pallet-profiles",
+ "pallet-randomness-collective-flip",
+ "pallet-reactions",
+ "pallet-roles",
+ "pallet-scheduler",
+ "pallet-scores",
+ "pallet-storefront-follows",
+ "pallet-storefront-history",
+ "pallet-storefront-ownership",
+ "pallet-storefronts",
+ "pallet-sudo",
+ "pallet-timestamp",
+ "pallet-transaction-payment",
+ "pallet-transaction-payment-rpc-runtime-api",
+ "pallet-utility",
+ "pallet-utils",
+ "parity-scale-codec",
+ "serde",
+ "sp-api",
+ "sp-block-builder",
+ "sp-consensus-aura",
+ "sp-core",
+ "sp-inherents",
+ "sp-io",
+ "sp-offchain",
+ "sp-runtime",
+ "sp-session",
+ "sp-std",
+ "sp-transaction-pool",
+ "sp-version",
+ "substrate-wasm-builder-runner",
+]
+
+[[package]]
 name = "data-encoding"
 version = "2.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -878,18 +963,18 @@ dependencies = [
  "frame-system",
  "pallet-balances",
  "pallet-permissions",
- "pallet-post-history",
- "pallet-posts",
+ "pallet-product-history",
+ "pallet-products",
  "pallet-profile-follows",
  "pallet-profile-history",
  "pallet-profiles",
  "pallet-reactions",
  "pallet-roles",
  "pallet-scores",
- "pallet-space-follows",
- "pallet-space-history",
- "pallet-space-ownership",
- "pallet-spaces",
+ "pallet-storefront-follows",
+ "pallet-storefront-history",
+ "pallet-storefront-ownership",
+ "pallet-storefronts",
  "pallet-timestamp",
  "pallet-utils",
  "sp-core",
@@ -2629,6 +2714,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "lite-json"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0460d985423a026b4d9b828a7c6eed1bcf606f476322f3f9b507529686a61715"
+dependencies = [
+ "lite-parser",
+]
+
+[[package]]
+name = "lite-parser"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0c50092e40e0ccd1bf2015a10333fde0502ff95b832b0895dc1ca0d7ac6c52f6"
+dependencies = [
+ "paste",
+]
+
+[[package]]
 name = "lock_api"
 version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3180,6 +3283,52 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-ocw"
+version = "0.4.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "lite-json",
+ "parity-scale-codec",
+ "parking_lot 0.10.2",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-order-history"
+version = "0.4.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "impl-trait-for-tuples",
+ "pallet-orders",
+ "pallet-products",
+ "pallet-utils",
+ "parity-scale-codec",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-orders"
+version = "0.4.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "impl-trait-for-tuples",
+ "pallet-permissions",
+ "pallet-products",
+ "pallet-storefronts",
+ "pallet-utils",
+ "parity-scale-codec",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-permissions"
 version = "0.4.0"
 dependencies = [
@@ -3192,13 +3341,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-post-history"
+name = "pallet-product-history"
 version = "0.4.0"
 dependencies = [
  "frame-support",
  "frame-system",
  "impl-trait-for-tuples",
- "pallet-posts",
+ "pallet-products",
  "pallet-utils",
  "parity-scale-codec",
  "sp-runtime",
@@ -3206,14 +3355,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-posts"
+name = "pallet-products"
 version = "0.4.0"
 dependencies = [
  "frame-support",
  "frame-system",
  "impl-trait-for-tuples",
  "pallet-permissions",
- "pallet-spaces",
+ "pallet-storefronts",
  "pallet-utils",
  "parity-scale-codec",
  "sp-runtime",
@@ -3279,8 +3428,8 @@ dependencies = [
  "frame-support",
  "frame-system",
  "pallet-permissions",
- "pallet-posts",
- "pallet-spaces",
+ "pallet-products",
+ "pallet-storefronts",
  "pallet-utils",
  "parity-scale-codec",
  "sp-runtime",
@@ -3326,12 +3475,12 @@ version = "0.4.0"
 dependencies = [
  "frame-support",
  "frame-system",
- "pallet-posts",
+ "pallet-products",
  "pallet-profile-follows",
  "pallet-profiles",
  "pallet-reactions",
- "pallet-space-follows",
- "pallet-spaces",
+ "pallet-storefront-follows",
+ "pallet-storefronts",
  "pallet-utils",
  "parity-scale-codec",
  "sp-core",
@@ -3360,26 +3509,26 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-space-follows"
+name = "pallet-storefront-follows"
 version = "0.4.0"
 dependencies = [
  "df-traits",
  "frame-support",
  "frame-system",
  "pallet-profiles",
- "pallet-spaces",
+ "pallet-storefronts",
  "pallet-utils",
  "parity-scale-codec",
  "sp-std",
 ]
 
 [[package]]
-name = "pallet-space-history"
+name = "pallet-storefront-history"
 version = "0.4.0"
 dependencies = [
  "frame-support",
  "frame-system",
- "pallet-spaces",
+ "pallet-storefronts",
  "pallet-utils",
  "parity-scale-codec",
  "sp-runtime",
@@ -3387,19 +3536,19 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-space-ownership"
+name = "pallet-storefront-ownership"
 version = "0.4.0"
 dependencies = [
  "frame-support",
  "frame-system",
- "pallet-spaces",
+ "pallet-storefronts",
  "pallet-utils",
  "parity-scale-codec",
  "sp-std",
 ]
 
 [[package]]
-name = "pallet-spaces"
+name = "pallet-storefronts"
 version = "0.4.0"
 dependencies = [
  "df-traits",
@@ -6212,86 +6361,6 @@ dependencies = [
  "proc-macro2",
  "quote 1.0.7",
  "syn 1.0.33",
-]
-
-[[package]]
-name = "subsocial-node"
-version = "0.4.0"
-dependencies = [
- "futures 0.3.5",
- "hex-literal",
- "log",
- "parking_lot 0.10.2",
- "sc-basic-authorship",
- "sc-cli",
- "sc-client-api",
- "sc-consensus",
- "sc-consensus-aura",
- "sc-executor",
- "sc-finality-grandpa",
- "sc-network",
- "sc-service",
- "sc-telemetry",
- "sc-transaction-pool",
- "sp-consensus",
- "sp-consensus-aura",
- "sp-core",
- "sp-finality-grandpa",
- "sp-inherents",
- "sp-runtime",
- "sp-transaction-pool",
- "structopt",
- "subsocial-runtime",
- "substrate-build-script-utils",
-]
-
-[[package]]
-name = "subsocial-runtime"
-version = "0.4.0"
-dependencies = [
- "frame-executive",
- "frame-support",
- "frame-system",
- "node-primitives",
- "pallet-aura",
- "pallet-balances",
- "pallet-grandpa",
- "pallet-permissions",
- "pallet-post-history",
- "pallet-posts",
- "pallet-profile-follows",
- "pallet-profile-history",
- "pallet-profiles",
- "pallet-randomness-collective-flip",
- "pallet-reactions",
- "pallet-roles",
- "pallet-scheduler",
- "pallet-scores",
- "pallet-space-follows",
- "pallet-space-history",
- "pallet-space-ownership",
- "pallet-spaces",
- "pallet-sudo",
- "pallet-timestamp",
- "pallet-transaction-payment",
- "pallet-transaction-payment-rpc-runtime-api",
- "pallet-utility",
- "pallet-utils",
- "parity-scale-codec",
- "serde",
- "sp-api",
- "sp-block-builder",
- "sp-consensus-aura",
- "sp-core",
- "sp-inherents",
- "sp-io",
- "sp-offchain",
- "sp-runtime",
- "sp-session",
- "sp-std",
- "sp-transaction-pool",
- "sp-version",
- "substrate-wasm-builder-runner",
 ]
 
 [[package]]

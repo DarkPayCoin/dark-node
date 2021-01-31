@@ -1,8 +1,8 @@
 use super::*;
 
 use frame_support::dispatch::DispatchError;
-use pallet_permissions::SpacePermissionsContext;
-use pallet_utils::SpaceId;
+use pallet_permissions::StorefrontPermissionsContext;
+use pallet_utils::StorefrontId;
 
 impl<T: Trait> Module<T> {
 
@@ -14,62 +14,62 @@ impl<T: Trait> Module<T> {
   }
 
   /// Get `Role` by id from the storage or return `RoleNotFound` error.
-  pub fn require_role(role_id: SpaceId) -> Result<Role<T>, DispatchError> {
+  pub fn require_role(role_id: StorefrontId) -> Result<Role<T>, DispatchError> {
       Ok(Self::role_by_id(role_id).ok_or(Error::<T>::RoleNotFound)?)
   }
 
-  pub fn ensure_role_manager(account: T::AccountId, space_id: SpaceId) -> DispatchResult {
-    Self::ensure_user_has_space_permission_with_load_space(
+  pub fn ensure_role_manager(account: T::AccountId, storefront_id: StorefrontId) -> DispatchResult {
+    Self::ensure_user_has_storefront_permission_with_load_storefront(
       User::Account(account),
-      space_id,
-      SpacePermission::ManageRoles,
+      storefront_id,
+      StorefrontPermission::ManageRoles,
       Error::<T>::NoPermissionToManageRoles.into()
     )
   }
 
-  fn ensure_user_has_space_permission_with_load_space(
+  fn ensure_user_has_storefront_permission_with_load_storefront(
     user: User<T::AccountId>,
-    space_id: SpaceId,
-    permission: SpacePermission,
+    storefront_id: StorefrontId,
+    permission: StorefrontPermission,
     error: DispatchError,
   ) -> DispatchResult {
 
-    let space = T::Spaces::get_space(space_id)?;
+    let storefront = T::Storefronts::get_storefront(storefront_id)?;
 
     let mut is_owner = false;
     let mut is_follower = false;
 
     match &user {
       User::Account(account) => {
-        is_owner = *account == space.owner;
+        is_owner = *account == storefront.owner;
 
         // No need to check if a user is follower, if they already are an owner:
-        is_follower = is_owner || T::SpaceFollows::is_space_follower(account.clone(), space_id);
+        is_follower = is_owner || T::StorefrontFollows::is_storefront_follower(account.clone(), storefront_id);
       }
-      User::Space(_) => (/* Not implemented yet. */),
+      User::Storefront(_) => (/* Not implemented yet. */),
     }
 
-    Self::ensure_user_has_space_permission(
+    Self::ensure_user_has_storefront_permission(
       user,
-      SpacePermissionsContext {
-        space_id,
-        is_space_owner: is_owner,
-        is_space_follower: is_follower,
-        space_perms: space.permissions
+      StorefrontPermissionsContext {
+        storefront_id,
+        is_storefront_owner: is_owner,
+        is_storefront_follower: is_follower,
+        storefront_perms: storefront.permissions
       },
       permission,
       error
     )
   }
 
-  fn ensure_user_has_space_permission(
+  fn ensure_user_has_storefront_permission(
     user: User<T::AccountId>,
-    ctx: SpacePermissionsContext,
-    permission: SpacePermission,
+    ctx: StorefrontPermissionsContext,
+    permission: StorefrontPermission,
     error: DispatchError,
   ) -> DispatchResult {
 
-    match Permissions::<T>::has_user_a_space_permission(
+    match Permissions::<T>::has_user_a_storefront_permission(
       ctx.clone(),
       permission.clone()
     ) {
@@ -78,22 +78,22 @@ impl<T: Trait> Module<T> {
       _ => (/* Need to check in dynamic roles */)
     }
 
-    Self::has_permission_in_space_roles(
+    Self::has_permission_in_storefront_roles(
       user,
-      ctx.space_id,
+      ctx.storefront_id,
       permission,
       error
     )
   }
 
-  fn has_permission_in_space_roles(
+  fn has_permission_in_storefront_roles(
     user: User<T::AccountId>,
-    space_id: SpaceId,
-    permission: SpacePermission,
+    storefront_id: StorefrontId,
+    permission: StorefrontPermission,
     error: DispatchError,
   ) -> DispatchResult {
 
-    let role_ids = Self::role_ids_by_user_in_space((user, space_id));
+    let role_ids = Self::role_ids_by_user_in_storefront((user, storefront_id));
 
     for role_id in role_ids {
       if let Some(role) = Self::role_by_id(role_id) {
@@ -122,10 +122,10 @@ impl<T: Trait> Role<T> {
 
   pub fn new(
     created_by: T::AccountId,
-    space_id: SpaceId,
+    storefront_id: StorefrontId,
     time_to_live: Option<T::BlockNumber>,
     content: Content,
-    permissions: BTreeSet<SpacePermission>,
+    permissions: BTreeSet<StorefrontPermission>,
   ) -> Result<Self, DispatchError> {
 
     let role_id = Module::<T>::next_role_id();
@@ -139,7 +139,7 @@ impl<T: Trait> Role<T> {
       created: WhoAndWhen::new(created_by),
       updated: None,
       id: role_id,
-      space_id,
+      storefront_id,
       disabled: false,
       expires_at,
       content,
@@ -165,11 +165,11 @@ impl<T: Trait> Role<T> {
     let mut users_by_role = <UsersByRoleId<T>>::take(self.id);
 
     for user in users.iter() {
-      let role_idx_by_user_opt = Module::<T>::role_ids_by_user_in_space((&user, self.space_id)).iter()
+      let role_idx_by_user_opt = Module::<T>::role_ids_by_user_in_storefront((&user, self.storefront_id)).iter()
         .position(|x| { *x == self.id });
 
       if let Some(role_idx) = role_idx_by_user_opt {
-        <RoleIdsByUserInSpace<T>>::mutate((user, self.space_id), |n| { n.swap_remove(role_idx) });
+        <RoleIdsByUserInStorefront<T>>::mutate((user, self.storefront_id), |n| { n.swap_remove(role_idx) });
       }
 
       let user_idx_by_role_opt = users_by_role.iter().position(|x| { x == user });
@@ -185,14 +185,14 @@ impl<T: Trait> Role<T> {
 impl<T: Trait> PermissionChecker for Module<T> {
   type AccountId = T::AccountId;
 
-  fn ensure_user_has_space_permission(
+  fn ensure_user_has_storefront_permission(
     user: User<Self::AccountId>,
-    ctx: SpacePermissionsContext,
-    permission: SpacePermission,
+    ctx: StorefrontPermissionsContext,
+    permission: StorefrontPermission,
     error: DispatchError,
   ) -> DispatchResult {
 
-    Self::ensure_user_has_space_permission(
+    Self::ensure_user_has_storefront_permission(
       user,
       ctx,
       permission,
