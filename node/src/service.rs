@@ -252,20 +252,6 @@ output_genesis_grandpa(grandpa_info, &genesis_info_path);
 	};
 
 
-// OCW
-// let dev_seed = config.dev_key_seed.clone();
-// if let Some(seed) = dev_seed {
-// 	keystore
-// 		.write()
-// 		.insert_ephemeral_from_seed_by_type::<dark_runtime::pallet_ocw::crypto::Pair>(
-// 			&seed,
-// 			dark_runtime::pallet_ocw::KEY_TYPE,
-// 		)
-// 		.expect("Dev Seed should always succeed.");
-// }
-
-
-
 	let enable_grandpa = !disable_grandpa;
 	if enable_grandpa {
 		// start the full GRANDPA voter
