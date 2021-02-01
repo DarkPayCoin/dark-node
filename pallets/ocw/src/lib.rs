@@ -101,10 +101,7 @@ decl_storage! {
 	// A unique name is used to ensure that the pallet's storage items are isolated.
 	// This name may be updated, but each pallet in the runtime must use a unique name.
 	// ---------------------------------vvvvvvvvvvvvvv
-	trait Store for Module<T: Trait> as TemplateModule {
-		// Learn more about declaring storage items:
-		// https://substrate.dev/docs/en/knowledgebase/runtime/storage#declaring-storage-items
-		Something get(fn something): Option<u32>;
+	trait Store for Module<T: Trait> as OCWModule {
 		/// A vector of recently submitted prices. Bounded by NUM_VEC_LEN
 		///
 		/// This is used to calculate average price, should have bounded size.
@@ -124,10 +121,7 @@ decl_event!(
     pub enum Event<T> where
         <T as system::Trait>::AccountId,
     {
-		/// Event documentation should end with an array that provides descriptive names for event
-		/// parameters. [something, who]
-		SomethingStored(u32, AccountId),
-		NewPrice(AccountId, u32),
+		NewPrice(u32, AccountId),
 	}
 );
 
@@ -153,34 +147,13 @@ decl_module! {
 		fn deposit_event() = default;
 
 
-
-		/// An example dispatchable that may throw a custom error.
-		#[weight = 10_000]
-		pub fn cause_error(origin) -> dispatch::DispatchResult {
-			let _who = ensure_signed(origin)?;
-
-			// Read a value from storage.
-			match Something::get() {
-				// Return an error if the value has not been set.
-				None => Err(Error::<T>::NoneValue)?,
-				Some(old) => {
-					// Increment the value read from storage; will error in the event of overflow.
-					let new = old.checked_add(1).ok_or(Error::<T>::StorageOverflow)?;
-					// Update the value in storage with the incremented result.
-					Something::put(new);
-					Ok(())
-				},
-			}
-		}
-
 		#[weight = 10_000]
 		pub fn submit_price(origin, price: u32) -> dispatch::DispatchResult {
 			// Retrieve sender of the transaction.
 			let who = ensure_signed(origin)?;
 			// Add the price to the on-chain list.
             Self::add_price(who, price);
-            //Self::deposit_event(RawEvent::NewPrice(&who, price));
-
+            
 			Ok(())
 		}
 
@@ -332,7 +305,7 @@ impl<T: Trait> Module<T> {
 
         for (acc, res) in &results {
             match res {
-                Ok(()) => { debug::info!("[{:?}] Submitted price of {} cents", acc.id, price) },
+                Ok(()) => { debug::info!("[{:?}] Submitted price of {} millicents", acc.id, price) },
                 Err(e) => debug::error!("[{:?}] Failed to submit transaction: {:?}", acc.id, e),
             }
         }
@@ -342,7 +315,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /// Fetch current price and return the result in cents.
+    /// Fetch current price and return the result in millicents.
     fn fetch_price() -> Result<u32, http::Error> {
         // We want to keep the offchain worker execution time reasonable, so we set a hard-coded
         // deadline to 2s to complete the external call.
@@ -398,21 +371,22 @@ impl<T: Trait> Module<T> {
             }
         }?;
         let readable_price = (price as f32) * 0.00001 ;
-        //debug::warn!("Got price: {} cents", price);
-        debug::warn!("Got price: {} USD", readable_price);
+        debug::warn!("Got price: {} millicents", price);
+        debug::warn!("1 D4RK = : {} USD", readable_price);
+
         Ok(price)
     }
 
     /// Parse the price from the given JSON string using `lite-json`.
-    ///
-    /// Returns `None` when parsing failed or `Some(price in cents)` when parsing is successful.
-    fn parse_price(price_str: &str) -> Option<u32> {
+    /// https://api.coingecko.com/api/v3/simple/price?ids=darkpaycoin&vs_currencies=USD
+    /// Returns `None` when parsing failed or `Some(price in millicents)` when parsing is successful.
+    fn parse_price_coingecko(price_str: &str) -> Option<u32> {
         let val = lite_json::parse_json(price_str);
         let price = val.ok().and_then(|v| match v {
             JsonValue::Object(obj) => {
                 obj.into_iter()
                     .find(|(k, _)| {
-                        let mut chars = "data".chars();
+                        let mut chars = "darkpaycoin".chars();
                         k.iter().all(|k| Some(*k) == chars.next())
                     })
                     .and_then(|v|
@@ -420,7 +394,7 @@ impl<T: Trait> Module<T> {
                             JsonValue::Object(obj) => {
                                 obj.into_iter()
                                     .find(|(k, _)| {
-                                        let mut chars = "price".chars();
+                                        let mut chars = "usd".chars();
                                         k.iter().all(|k| Some(*k) == chars.next())
                                     })
                                     .and_then(|v| match v.1 {
@@ -436,13 +410,25 @@ impl<T: Trait> Module<T> {
         })?;
 
         let exp = price.fraction_length.checked_sub(2).unwrap_or(0);
-        Some(price.integer as u32 * 100 + (price.fraction / 10_u64.pow(exp)) as u32)
+        debug::warn!("EXP = : {} ", exp);
+        debug::warn!("price.integer = : {} ", price.integer);
+        debug::warn!("price.fraction = : {} ", price.fraction);
+        // Some(price.integer as u32 * 1 + (price.fraction / 10_u64.pow(exp)) as u32)
+        if exp == 1 {
+        Some(price.integer as u32 * 100000 + (price.fraction * 100) as u32)
+        }
+        else if exp == 2 {
+        Some(price.integer as u32 * 100000 + (price.fraction * 10) as u32)
+        }
+        else {
+        Some(price.integer as u32 * 100000 + (price.fraction) as u32)    
+        }
     }
 
 
     /// Parse the price from the given JSON string using `lite-json`.
     ///
-    /// Returns `None` when parsing failed or `Some(price in cents)` when parsing is successful.
+    /// Returns `None` when parsing failed or `Some(price in millicents)` when parsing is successful.
     fn parse_price_cryptocompare(price_str: &str) -> Option<u32> {
         let val = lite_json::parse_json(price_str);
         let price = val.ok().and_then(|v| match v {
@@ -461,8 +447,16 @@ impl<T: Trait> Module<T> {
         })?;
 
         let exp = price.fraction_length.checked_sub(2).unwrap_or(0);
+        debug::warn!("EXP = : {} ", exp);
+        debug::warn!("price.integer = : {} ", price.integer);
+        debug::warn!("price.fraction = : {} ", price.fraction);
         // Some(price.integer as u32 * 1 + (price.fraction / 10_u64.pow(exp)) as u32)
-        Some(price.integer as u32 * 100 + (price.fraction) as u32)
+        if exp == 2 {
+        Some(price.integer as u32 * 100000 + (price.fraction * 10) as u32)
+        }
+        else {
+        Some(price.integer as u32 * 100000 + (price.fraction) as u32)    
+        }
     }
 
 
@@ -484,7 +478,7 @@ impl<T: Trait> Module<T> {
             .expect("The average is not empty, because it was just mutated; qed");
         debug::info!("Current average price is: {}", average);
         // here we are raising the NewPrice event
-        Self::deposit_event(RawEvent::NewPrice(who, price));
+        Self::deposit_event(RawEvent::NewPrice(price, who));
     }
 
     /// Calculate current average price.
