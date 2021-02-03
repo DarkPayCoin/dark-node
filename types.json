@@ -300,7 +300,11 @@
         "Refused",
         "Shipped",
         "Complete",
-        "Refunded"
+        "Refunded",
+        "Dispute",
+        "SlashedBuyer",
+        "SlashedSeller",
+        "SlashedBoth"
       ]
     }
     

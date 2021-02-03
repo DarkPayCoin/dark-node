@@ -54,7 +54,11 @@ pub enum OrderState {
     Refused,
     Shipped,
     Complete,
-    Refunded
+    Refunded,
+    Dispute,
+    SlashedBuyer,
+    SlashedSeller,
+    SlashedBoth,
 }
 
 impl Default for OrderState {
@@ -352,9 +356,23 @@ decl_module! {
       };
     }
 
-    OrderState::Refunded => {
+    OrderState::Dispute => {
       return Err(Error::<T>::OrderFLowNotFullyImplementedYet.into());
     }
+
+    OrderState::SlashedBuyer => {
+      return Err(Error::<T>::OrderFLowNotFullyImplementedYet.into());
+    }
+
+    OrderState::SlashedSeller => {
+      return Err(Error::<T>::OrderFLowNotFullyImplementedYet.into());
+    }
+
+    OrderState::SlashedBoth => {
+      return Err(Error::<T>::OrderFLowNotFullyImplementedYet.into());
+    }
+// TODO : implement Dispute mode
+
 
 }
 
