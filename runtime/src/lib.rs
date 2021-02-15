@@ -593,6 +593,10 @@ parameter_types! {
 	pub const UnsignedPriority: u64 = 1 << 20;
 }
 
+impl pallet_faucets::Trait for Runtime {
+	type Event = Event;
+	type Currency = Balances;
+}
 
 
 /*parameter_types! {
@@ -655,6 +659,7 @@ construct_runtime!(
 		Orders: pallet_orders::{Module, Call, Storage, Event<T>},
 		OrderHistory: pallet_order_history::{Module, Storage},
 		OCWModule: pallet_ocw::{Module, Call, Storage, Event<T>},
+		Faucets: pallet_faucets::{Module, Call, Storage, Event<T>},
 		// SessionKeys: session_keys::{Module, Call, Storage, Config<T>, Event<T>},
 	}
 );

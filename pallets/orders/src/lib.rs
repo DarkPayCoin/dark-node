@@ -355,7 +355,9 @@ decl_module! {
         return Err(Error::<T>::OrderStateDoesNotExpectUpdate.into());
       };
     }
-
+    OrderState::Refunded => {
+      return Err(Error::<T>::OrderFLowNotFullyImplementedYet.into());
+    }
     OrderState::Dispute => {
       return Err(Error::<T>::OrderFLowNotFullyImplementedYet.into());
     }
